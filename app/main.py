@@ -9,7 +9,20 @@ Run locally:
 Run in production (e.g. on Render/Railway):
     uvicorn app.main:app --host 0.0.0.0 --port $PORT
 """
+import os
+import json
 
+# ── Write Firebase service-account JSON from env var to disk, if provided ──
+# Render (and similar platforms) can't easily mount a JSON file, so we pass
+# the credentials as a single env var and materialize it as a file here,
+# before app.config reads FIREBASE_CREDENTIALS_PATH.
+_fb_json = os.getenv("FIREBASE_CREDENTIALS_JSON")
+if _fb_json and not os.getenv("FIREBASE_CREDENTIALS_PATH"):
+    _cred_path = "/tmp/firebase-credentials.json"
+    with open(_cred_path, "w") as f:
+        f.write(_fb_json)
+    os.environ["FIREBASE_CREDENTIALS_PATH"] = _cred_path
+    
 import logging
 from contextlib import asynccontextmanager
 
