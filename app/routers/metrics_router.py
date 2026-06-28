@@ -51,3 +51,14 @@ def get_metrics():
         data["baseline_cv_config"] = baselines_data.get("baseline_cv_config", {})
 
     return data
+
+@router.get("/metrics-debug")
+def metrics_debug():
+    return {
+        "metrics_path": str(METRICS_PATH),
+        "metrics_path_exists": METRICS_PATH.exists(),
+        "fallback_path": str(FALLBACK_PATH),
+        "fallback_exists": FALLBACK_PATH.exists(),
+        "cwd": str(pathlib.Path.cwd()),
+        "file_dir_contents": [str(p) for p in pathlib.Path(__file__).parent.parent.parent.iterdir()],
+    }
