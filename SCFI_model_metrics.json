@@ -1,0 +1,2246 @@
+{
+  "version": "v7",
+  "fixes_applied": [
+    "Fix1: first-difference target (DELTA_SCFI); CV uses 1-step anchor (no compounding); forecast uses cumsum",
+    "Fix2: expanding walk-forward CV (TimeSeriesSplit, 5 folds)",
+    "Fix3: regime features \u2014 52w Z-score, distance from 52w high/low, regime label"
+  ],
+  "improvements_applied": [
+    "Imp1: extended momentum (8w/13w rolling, EMA4/12, crossover), exog rate-of-change, interaction terms, Brent Z13",
+    "Imp2: XGBoost \u2014 100-trial Optuna tuned on ALL 5 folds (not just fold 0); adds colsample_bylevel",
+    "Imp3: RF selected via 30-iter randomised search across RF and ExtraTrees on all 5 folds",
+    "Imp4: Ensemble \u2014 scipy-optimised weight (XGB=1.000, RF=0.000)"
+  ],
+  "cv_config": {
+    "n_splits": 5
+  },
+  "last_training_date": "2026-06-15",
+  "data_rows": 459,
+  "ensemble_weights": {
+    "xgboost": 1.0,
+    "rf": 0.0
+  },
+  "models": [
+    {
+      "id": "xgboost",
+      "label": "XGBoost",
+      "Model": "XGBoost",
+      "MAE": 49.62,
+      "RMSE": 78.49,
+      "MAPE(%)": 2.63,
+      "R\u00b2": 0.9961,
+      "best_params": {
+        "n_estimators": 540,
+        "max_depth": 7,
+        "learning_rate": 0.08015566616323921,
+        "subsample": 0.96407152459236,
+        "colsample_bytree": 0.9838366728640169,
+        "colsample_bylevel": 0.8762608015606752,
+        "min_child_weight": 2,
+        "reg_alpha": 0.023714928054360877,
+        "reg_lambda": 0.0010674546105480407,
+        "gamma": 2.0579539486782017
+      }
+    },
+    {
+      "id": "random_forest",
+      "label": "RF",
+      "Model": "RF",
+      "MAE": 53.89,
+      "RMSE": 82.16,
+      "MAPE(%)": 2.86,
+      "R\u00b2": 0.9958,
+      "best_params": {
+        "n_estimators": 600,
+        "min_samples_leaf": 2,
+        "max_samples": 0.9,
+        "max_features": 0.7,
+        "max_depth": 30
+      }
+    },
+    {
+      "id": "sarimax",
+      "label": "SARIMAX",
+      "Model": "SARIMAX",
+      "MAE": 1402.78,
+      "RMSE": 1888.86,
+      "MAPE(%)": 80.97,
+      "R\u00b2": -1.2395
+    },
+    {
+      "id": "lstm",
+      "label": "LSTM",
+      "Model": "LSTM",
+      "MAE": 82.51,
+      "RMSE": 114.64,
+      "MAPE(%)": 4.23,
+      "R\u00b2": 0.9918
+    },
+    {
+      "id": "ensemble",
+      "label": "Ensemble",
+      "Model": "Ensemble (XGB+RF/ET)",
+      "MAE": 49.62,
+      "RMSE": 78.49,
+      "MAPE(%)": 2.63,
+      "R\u00b2": 0.9961
+    }
+  ],
+  "forecasts": {
+    "xgboost": [
+      {
+        "week": 1,
+        "forecast": 2986.23,
+        "delta": 1.01
+      },
+      {
+        "week": 2,
+        "forecast": 2934.66,
+        "delta": -51.57
+      },
+      {
+        "week": 3,
+        "forecast": 2853.4,
+        "delta": -81.26
+      },
+      {
+        "week": 4,
+        "forecast": 2781.15,
+        "delta": -72.24
+      },
+      {
+        "week": 5,
+        "forecast": 2696.54,
+        "delta": -84.61
+      },
+      {
+        "week": 6,
+        "forecast": 2611.57,
+        "delta": -84.97
+      },
+      {
+        "week": 7,
+        "forecast": 2538.76,
+        "delta": -72.81
+      },
+      {
+        "week": 8,
+        "forecast": 2468.13,
+        "delta": -70.63
+      }
+    ],
+    "random_forest": [
+      {
+        "week": 1,
+        "forecast": 3056.43,
+        "delta": 71.22
+      },
+      {
+        "week": 2,
+        "forecast": 3103.1,
+        "delta": 46.67
+      },
+      {
+        "week": 3,
+        "forecast": 3117.45,
+        "delta": 14.35
+      },
+      {
+        "week": 4,
+        "forecast": 3136.86,
+        "delta": 19.41
+      },
+      {
+        "week": 5,
+        "forecast": 3156.21,
+        "delta": 19.35
+      },
+      {
+        "week": 6,
+        "forecast": 3181.15,
+        "delta": 24.94
+      },
+      {
+        "week": 7,
+        "forecast": 3207.35,
+        "delta": 26.2
+      },
+      {
+        "week": 8,
+        "forecast": 3232.76,
+        "delta": 25.41
+      }
+    ],
+    "sarimax": [
+      {
+        "week": 1,
+        "forecast": 3030.83
+      },
+      {
+        "week": 2,
+        "forecast": 3074.54
+      },
+      {
+        "week": 3,
+        "forecast": 3100.91
+      },
+      {
+        "week": 4,
+        "forecast": 3157.84
+      },
+      {
+        "week": 5,
+        "forecast": 3182.55
+      },
+      {
+        "week": 6,
+        "forecast": 3206.48
+      },
+      {
+        "week": 7,
+        "forecast": 3211.29
+      },
+      {
+        "week": 8,
+        "forecast": 3199.88
+      }
+    ],
+    "lstm": [
+      {
+        "week": 1,
+        "forecast": 2968.92,
+        "delta": -16.29
+      },
+      {
+        "week": 2,
+        "forecast": 2951.84,
+        "delta": -17.08
+      },
+      {
+        "week": 3,
+        "forecast": 2934.41,
+        "delta": -17.43
+      },
+      {
+        "week": 4,
+        "forecast": 2916.82,
+        "delta": -17.59
+      },
+      {
+        "week": 5,
+        "forecast": 2898.42,
+        "delta": -18.41
+      },
+      {
+        "week": 6,
+        "forecast": 2879.57,
+        "delta": -18.85
+      },
+      {
+        "week": 7,
+        "forecast": 2861.96,
+        "delta": -17.61
+      },
+      {
+        "week": 8,
+        "forecast": 2844.57,
+        "delta": -17.4
+      }
+    ],
+    "ensemble": [
+      {
+        "week": 1,
+        "forecast": 2986.23
+      },
+      {
+        "week": 2,
+        "forecast": 2934.66
+      },
+      {
+        "week": 3,
+        "forecast": 2853.4
+      },
+      {
+        "week": 4,
+        "forecast": 2781.15
+      },
+      {
+        "week": 5,
+        "forecast": 2696.54
+      },
+      {
+        "week": 6,
+        "forecast": 2611.57
+      },
+      {
+        "week": 7,
+        "forecast": 2538.76
+      },
+      {
+        "week": 8,
+        "forecast": 2468.13
+      }
+    ]
+  },
+  "shap_global": {
+    "xgboost": [
+      {
+        "Feature": "SCFI_pct_chg_4w",
+        "Mean|SHAP|": 46.77626037597656
+      },
+      {
+        "Feature": "SCFI_rolling_std4",
+        "Mean|SHAP|": 18.870471954345703
+      },
+      {
+        "Feature": "SCFI_dist_hi52",
+        "Mean|SHAP|": 10.351930618286133
+      },
+      {
+        "Feature": "DSCFI_lag3",
+        "Mean|SHAP|": 9.495771408081055
+      },
+      {
+        "Feature": "DSCFI_lag1",
+        "Mean|SHAP|": 6.1541924476623535
+      },
+      {
+        "Feature": "DSCFI_lag2",
+        "Mean|SHAP|": 5.197543621063232
+      },
+      {
+        "Feature": "SCFI_rolling_std8",
+        "Mean|SHAP|": 3.906102418899536
+      },
+      {
+        "Feature": "DSCFI_lag4",
+        "Mean|SHAP|": 2.1093978881835938
+      },
+      {
+        "Feature": "Brent_Oil_delta1",
+        "Mean|SHAP|": 1.458343267440796
+      },
+      {
+        "Feature": "DSCFI_x_regime",
+        "Mean|SHAP|": 1.3059124946594238
+      },
+      {
+        "Feature": "week_of_year",
+        "Mean|SHAP|": 1.2095317840576172
+      },
+      {
+        "Feature": "Trade_Volume_YoY",
+        "Mean|SHAP|": 1.1978508234024048
+      },
+      {
+        "Feature": "SCFI_rolling_mean4",
+        "Mean|SHAP|": 1.131219506263733
+      },
+      {
+        "Feature": "SCFI_z52",
+        "Mean|SHAP|": 1.1207777261734009
+      },
+      {
+        "Feature": "DSCFI_lag8",
+        "Mean|SHAP|": 1.089647889137268
+      },
+      {
+        "Feature": "SCFI_dist_lo52",
+        "Mean|SHAP|": 0.9430984258651733
+      },
+      {
+        "Feature": "SCFI_rolling_mean13",
+        "Mean|SHAP|": 0.8690523505210876
+      },
+      {
+        "Feature": "World_PMI_pct4",
+        "Mean|SHAP|": 0.8100973963737488
+      },
+      {
+        "Feature": "Brent_Oil",
+        "Mean|SHAP|": 0.802898645401001
+      },
+      {
+        "Feature": "SCFI_EMA12",
+        "Mean|SHAP|": 0.7655848264694214
+      },
+      {
+        "Feature": "SCFI_rolling_mean8",
+        "Mean|SHAP|": 0.7640907168388367
+      },
+      {
+        "Feature": "World_PMI_delta1",
+        "Mean|SHAP|": 0.7151740193367004
+      },
+      {
+        "Feature": "Brent_Oil_delta4",
+        "Mean|SHAP|": 0.7087829113006592
+      },
+      {
+        "Feature": "DSCFI_lag12",
+        "Mean|SHAP|": 0.650560736656189
+      },
+      {
+        "Feature": "SCFI_EMA4_vs_EMA12",
+        "Mean|SHAP|": 0.6407925486564636
+      },
+      {
+        "Feature": "Brent_Oil_lag1",
+        "Mean|SHAP|": 0.6050959825515747
+      },
+      {
+        "Feature": "CNY_USD_lag4",
+        "Mean|SHAP|": 0.5904971361160278
+      },
+      {
+        "Feature": "World_PMI",
+        "Mean|SHAP|": 0.5647684931755066
+      },
+      {
+        "Feature": "Q3",
+        "Mean|SHAP|": 0.5549360513687134
+      },
+      {
+        "Feature": "CNY_USD",
+        "Mean|SHAP|": 0.5218809247016907
+      },
+      {
+        "Feature": "Brent_Oil_lag8",
+        "Mean|SHAP|": 0.5161293745040894
+      },
+      {
+        "Feature": "Brent_z13",
+        "Mean|SHAP|": 0.4972071945667267
+      },
+      {
+        "Feature": "month",
+        "Mean|SHAP|": 0.45520326495170593
+      },
+      {
+        "Feature": "Trade_Volume_Index_delta4",
+        "Mean|SHAP|": 0.4384583830833435
+      },
+      {
+        "Feature": "Trade_Volume_Index_lag8",
+        "Mean|SHAP|": 0.4241228401660919
+      },
+      {
+        "Feature": "CNY_USD_lag1",
+        "Mean|SHAP|": 0.42366477847099304
+      },
+      {
+        "Feature": "Trade_Volume_Index_lag4",
+        "Mean|SHAP|": 0.37745529413223267
+      },
+      {
+        "Feature": "year",
+        "Mean|SHAP|": 0.37405067682266235
+      },
+      {
+        "Feature": "Brent_Oil_pct4",
+        "Mean|SHAP|": 0.3690955936908722
+      },
+      {
+        "Feature": "SCFI_EMA4",
+        "Mean|SHAP|": 0.35222673416137695
+      },
+      {
+        "Feature": "brent_x_pmi",
+        "Mean|SHAP|": 0.3148532807826996
+      },
+      {
+        "Feature": "brent_x_cny",
+        "Mean|SHAP|": 0.3077664375305176
+      },
+      {
+        "Feature": "Month_May",
+        "Mean|SHAP|": 0.2571115493774414
+      },
+      {
+        "Feature": "Trade_Volume_Index_lag1",
+        "Mean|SHAP|": 0.2514680027961731
+      },
+      {
+        "Feature": "Trade_Volume_Index_delta1",
+        "Mean|SHAP|": 0.2490077167749405
+      },
+      {
+        "Feature": "Brent_Oil_lag2",
+        "Mean|SHAP|": 0.2454652488231659
+      },
+      {
+        "Feature": "Trade_Volume_Index",
+        "Mean|SHAP|": 0.24183861911296844
+      },
+      {
+        "Feature": "Brent_Oil_lag4",
+        "Mean|SHAP|": 0.23426644504070282
+      },
+      {
+        "Feature": "World_PMI_lag4",
+        "Mean|SHAP|": 0.2191036343574524
+      },
+      {
+        "Feature": "CNY_USD_lag2",
+        "Mean|SHAP|": 0.20867706835269928
+      },
+      {
+        "Feature": "trade_x_pmi",
+        "Mean|SHAP|": 0.16722001135349274
+      },
+      {
+        "Feature": "World_PMI_delta4",
+        "Mean|SHAP|": 0.1602955460548401
+      },
+      {
+        "Feature": "World_PMI_lag8",
+        "Mean|SHAP|": 0.15083445608615875
+      },
+      {
+        "Feature": "Month_Oct",
+        "Mean|SHAP|": 0.12468645721673965
+      },
+      {
+        "Feature": "Trade_Volume_Index_pct4",
+        "Mean|SHAP|": 0.1233162134885788
+      },
+      {
+        "Feature": "Month_Feb",
+        "Mean|SHAP|": 0.121390201151371
+      },
+      {
+        "Feature": "Month_Nov",
+        "Mean|SHAP|": 0.09442400932312012
+      },
+      {
+        "Feature": "World_PMI_lag1",
+        "Mean|SHAP|": 0.08077849447727203
+      },
+      {
+        "Feature": "Month_Jun",
+        "Mean|SHAP|": 0.04772089794278145
+      },
+      {
+        "Feature": "Month_Dec",
+        "Mean|SHAP|": 0.030835716053843498
+      },
+      {
+        "Feature": "Month_Sep",
+        "Mean|SHAP|": 0.02914758212864399
+      },
+      {
+        "Feature": "Month_Mar",
+        "Mean|SHAP|": 0.02121223509311676
+      },
+      {
+        "Feature": "Month_Aug",
+        "Mean|SHAP|": 0.016858018934726715
+      },
+      {
+        "Feature": "Month_Jul",
+        "Mean|SHAP|": 0.012044111266732216
+      },
+      {
+        "Feature": "Q2",
+        "Mean|SHAP|": 0.010293547064065933
+      },
+      {
+        "Feature": "Q4",
+        "Mean|SHAP|": 0.005577614530920982
+      },
+      {
+        "Feature": "Month_Apr",
+        "Mean|SHAP|": 0.002521632704883814
+      },
+      {
+        "Feature": "SCFI_regime",
+        "Mean|SHAP|": 0.0
+      }
+    ],
+    "random_forest": [
+      {
+        "Feature": "SCFI_pct_chg_4w",
+        "Mean|SHAP|": 35.62455033992042
+      },
+      {
+        "Feature": "SCFI_rolling_std4",
+        "Mean|SHAP|": 11.393705748526669
+      },
+      {
+        "Feature": "SCFI_dist_hi52",
+        "Mean|SHAP|": 8.877586668458456
+      },
+      {
+        "Feature": "DSCFI_lag3",
+        "Mean|SHAP|": 6.4194029286781085
+      },
+      {
+        "Feature": "DSCFI_lag1",
+        "Mean|SHAP|": 5.3980475301909605
+      },
+      {
+        "Feature": "DSCFI_lag2",
+        "Mean|SHAP|": 2.2054407281502657
+      },
+      {
+        "Feature": "DSCFI_x_regime",
+        "Mean|SHAP|": 1.3127871858953906
+      },
+      {
+        "Feature": "DSCFI_lag4",
+        "Mean|SHAP|": 1.1796568501340792
+      },
+      {
+        "Feature": "SCFI_rolling_std8",
+        "Mean|SHAP|": 1.100048511356979
+      },
+      {
+        "Feature": "Trade_Volume_YoY",
+        "Mean|SHAP|": 1.0188936114643614
+      },
+      {
+        "Feature": "SCFI_z52",
+        "Mean|SHAP|": 0.7944759327479627
+      },
+      {
+        "Feature": "SCFI_dist_lo52",
+        "Mean|SHAP|": 0.7775383822952658
+      },
+      {
+        "Feature": "Brent_Oil_delta1",
+        "Mean|SHAP|": 0.7271764606884988
+      },
+      {
+        "Feature": "week_of_year",
+        "Mean|SHAP|": 0.6711251041052535
+      },
+      {
+        "Feature": "SCFI_rolling_mean4",
+        "Mean|SHAP|": 0.6166507786390774
+      },
+      {
+        "Feature": "SCFI_EMA4_vs_EMA12",
+        "Mean|SHAP|": 0.5667737125269979
+      },
+      {
+        "Feature": "SCFI_EMA12",
+        "Mean|SHAP|": 0.5652997951044673
+      },
+      {
+        "Feature": "SCFI_rolling_mean13",
+        "Mean|SHAP|": 0.5413741014007709
+      },
+      {
+        "Feature": "DSCFI_lag8",
+        "Mean|SHAP|": 0.5298098658884055
+      },
+      {
+        "Feature": "Month_May",
+        "Mean|SHAP|": 0.4629720686738344
+      },
+      {
+        "Feature": "Brent_Oil_lag8",
+        "Mean|SHAP|": 0.43828350996814125
+      },
+      {
+        "Feature": "Brent_Oil_pct4",
+        "Mean|SHAP|": 0.4253235741290502
+      },
+      {
+        "Feature": "Brent_Oil_delta4",
+        "Mean|SHAP|": 0.40753847598985016
+      },
+      {
+        "Feature": "Trade_Volume_Index_lag4",
+        "Mean|SHAP|": 0.3850599001562977
+      },
+      {
+        "Feature": "Trade_Volume_Index_lag1",
+        "Mean|SHAP|": 0.3360404899937127
+      },
+      {
+        "Feature": "Trade_Volume_Index_lag8",
+        "Mean|SHAP|": 0.31848173680440794
+      },
+      {
+        "Feature": "SCFI_EMA4",
+        "Mean|SHAP|": 0.3102147888319
+      },
+      {
+        "Feature": "brent_x_cny",
+        "Mean|SHAP|": 0.3025658363177657
+      },
+      {
+        "Feature": "DSCFI_lag12",
+        "Mean|SHAP|": 0.28346933712695954
+      },
+      {
+        "Feature": "Q3",
+        "Mean|SHAP|": 0.2817125103823498
+      },
+      {
+        "Feature": "World_PMI_delta1",
+        "Mean|SHAP|": 0.27942154096425126
+      },
+      {
+        "Feature": "Brent_Oil_lag2",
+        "Mean|SHAP|": 0.2592737792357002
+      },
+      {
+        "Feature": "Brent_z13",
+        "Mean|SHAP|": 0.2396757531436285
+      },
+      {
+        "Feature": "SCFI_rolling_mean8",
+        "Mean|SHAP|": 0.2372266972483811
+      },
+      {
+        "Feature": "Trade_Volume_Index_delta4",
+        "Mean|SHAP|": 0.22909111553747108
+      },
+      {
+        "Feature": "brent_x_pmi",
+        "Mean|SHAP|": 0.21947795276471016
+      },
+      {
+        "Feature": "month",
+        "Mean|SHAP|": 0.21876421901018273
+      },
+      {
+        "Feature": "CNY_USD_lag2",
+        "Mean|SHAP|": 0.21534092068182695
+      },
+      {
+        "Feature": "Trade_Volume_Index_pct4",
+        "Mean|SHAP|": 0.21060729842939593
+      },
+      {
+        "Feature": "CNY_USD_lag1",
+        "Mean|SHAP|": 0.20203763039691497
+      },
+      {
+        "Feature": "CNY_USD_lag4",
+        "Mean|SHAP|": 0.20176810679541254
+      },
+      {
+        "Feature": "World_PMI_pct4",
+        "Mean|SHAP|": 0.1976934231040195
+      },
+      {
+        "Feature": "Brent_Oil",
+        "Mean|SHAP|": 0.19423610175665962
+      },
+      {
+        "Feature": "Trade_Volume_Index",
+        "Mean|SHAP|": 0.19111010127871905
+      },
+      {
+        "Feature": "Brent_Oil_lag1",
+        "Mean|SHAP|": 0.18157788872238664
+      },
+      {
+        "Feature": "Brent_Oil_lag4",
+        "Mean|SHAP|": 0.1815344255140006
+      },
+      {
+        "Feature": "Month_Sep",
+        "Mean|SHAP|": 0.17901601652922805
+      },
+      {
+        "Feature": "World_PMI_delta4",
+        "Mean|SHAP|": 0.16800442867879906
+      },
+      {
+        "Feature": "Trade_Volume_Index_delta1",
+        "Mean|SHAP|": 0.16370869125825477
+      },
+      {
+        "Feature": "trade_x_pmi",
+        "Mean|SHAP|": 0.16110634027607462
+      },
+      {
+        "Feature": "CNY_USD",
+        "Mean|SHAP|": 0.15041138024302342
+      },
+      {
+        "Feature": "World_PMI",
+        "Mean|SHAP|": 0.14347343319578437
+      },
+      {
+        "Feature": "Month_Feb",
+        "Mean|SHAP|": 0.12127075262335484
+      },
+      {
+        "Feature": "World_PMI_lag4",
+        "Mean|SHAP|": 0.1101382169735083
+      },
+      {
+        "Feature": "World_PMI_lag8",
+        "Mean|SHAP|": 0.09396934750478336
+      },
+      {
+        "Feature": "year",
+        "Mean|SHAP|": 0.08553988679598275
+      },
+      {
+        "Feature": "Month_Nov",
+        "Mean|SHAP|": 0.08366007523285454
+      },
+      {
+        "Feature": "World_PMI_lag1",
+        "Mean|SHAP|": 0.08308392824980734
+      },
+      {
+        "Feature": "Month_Dec",
+        "Mean|SHAP|": 0.0778315716727918
+      },
+      {
+        "Feature": "Q2",
+        "Mean|SHAP|": 0.07767798131606131
+      },
+      {
+        "Feature": "SCFI_regime",
+        "Mean|SHAP|": 0.06542768766681539
+      },
+      {
+        "Feature": "Month_Oct",
+        "Mean|SHAP|": 0.06408977514976098
+      },
+      {
+        "Feature": "Month_Jun",
+        "Mean|SHAP|": 0.051563081873054
+      },
+      {
+        "Feature": "Q4",
+        "Mean|SHAP|": 0.043780776093018135
+      },
+      {
+        "Feature": "Month_Aug",
+        "Mean|SHAP|": 0.03260749898037224
+      },
+      {
+        "Feature": "Month_Mar",
+        "Mean|SHAP|": 0.031178830831325496
+      },
+      {
+        "Feature": "Month_Apr",
+        "Mean|SHAP|": 0.013843621897978138
+      },
+      {
+        "Feature": "Month_Jul",
+        "Mean|SHAP|": 0.01190578385629864
+      }
+    ],
+    "sarimax": [
+      {
+        "Feature": "Brent_Oil",
+        "Mean|SHAP|": 0.0
+      },
+      {
+        "Feature": "CNY_USD",
+        "Mean|SHAP|": 0.0
+      },
+      {
+        "Feature": "World_PMI",
+        "Mean|SHAP|": 0.0
+      },
+      {
+        "Feature": "Trade_Volume_Index",
+        "Mean|SHAP|": 0.0
+      },
+      {
+        "Feature": "Trade_Volume_YoY",
+        "Mean|SHAP|": 0.0
+      },
+      {
+        "Feature": "Q2",
+        "Mean|SHAP|": 0.0
+      },
+      {
+        "Feature": "Q3",
+        "Mean|SHAP|": 0.0
+      },
+      {
+        "Feature": "Q4",
+        "Mean|SHAP|": 0.0
+      },
+      {
+        "Feature": "Month_Feb",
+        "Mean|SHAP|": 0.0
+      },
+      {
+        "Feature": "Month_Mar",
+        "Mean|SHAP|": 0.0
+      },
+      {
+        "Feature": "Month_Apr",
+        "Mean|SHAP|": 0.0
+      },
+      {
+        "Feature": "Month_May",
+        "Mean|SHAP|": 0.0
+      },
+      {
+        "Feature": "Month_Jun",
+        "Mean|SHAP|": 0.0
+      },
+      {
+        "Feature": "Month_Jul",
+        "Mean|SHAP|": 0.0
+      },
+      {
+        "Feature": "Month_Aug",
+        "Mean|SHAP|": 0.0
+      },
+      {
+        "Feature": "Month_Sep",
+        "Mean|SHAP|": 0.0
+      },
+      {
+        "Feature": "Month_Oct",
+        "Mean|SHAP|": 0.0
+      },
+      {
+        "Feature": "Month_Nov",
+        "Mean|SHAP|": 0.0
+      },
+      {
+        "Feature": "Month_Dec",
+        "Mean|SHAP|": 0.0
+      }
+    ],
+    "lstm": [
+      {
+        "Feature": "Brent_Oil_lag1",
+        "Mean|SHAP|": 1.8419738910796095
+      },
+      {
+        "Feature": "SCFI_rolling_mean4",
+        "Mean|SHAP|": 1.4794950024069582
+      },
+      {
+        "Feature": "World_PMI_pct4",
+        "Mean|SHAP|": 1.3746945053156365
+      },
+      {
+        "Feature": "SCFI_EMA4_vs_EMA12",
+        "Mean|SHAP|": 1.0465853221882484
+      },
+      {
+        "Feature": "Brent_Oil_lag4",
+        "Mean|SHAP|": 0.9015497989499777
+      },
+      {
+        "Feature": "DSCFI_lag3",
+        "Mean|SHAP|": 0.7721108469605803
+      },
+      {
+        "Feature": "SCFI_EMA4",
+        "Mean|SHAP|": 0.7631340353858654
+      },
+      {
+        "Feature": "SCFI_rolling_mean8",
+        "Mean|SHAP|": 0.7579022174809292
+      },
+      {
+        "Feature": "Trade_Volume_Index_lag4",
+        "Mean|SHAP|": 0.6149906172645896
+      },
+      {
+        "Feature": "brent_x_pmi",
+        "Mean|SHAP|": 0.5949041063911642
+      },
+      {
+        "Feature": "Trade_Volume_Index_pct4",
+        "Mean|SHAP|": 0.5326312008369785
+      },
+      {
+        "Feature": "World_PMI_delta4",
+        "Mean|SHAP|": 0.5010306229637516
+      },
+      {
+        "Feature": "SCFI_z52",
+        "Mean|SHAP|": 0.4955886862834868
+      },
+      {
+        "Feature": "Brent_Oil",
+        "Mean|SHAP|": 0.4942389371205979
+      },
+      {
+        "Feature": "Brent_Oil_lag8",
+        "Mean|SHAP|": 0.4355310581570057
+      },
+      {
+        "Feature": "SCFI_rolling_mean13",
+        "Mean|SHAP|": 0.421425436990926
+      },
+      {
+        "Feature": "Brent_z13",
+        "Mean|SHAP|": 0.407452853752243
+      },
+      {
+        "Feature": "Brent_Oil_delta1",
+        "Mean|SHAP|": 0.3775095461439967
+      },
+      {
+        "Feature": "Month_Apr",
+        "Mean|SHAP|": 0.3721145320170116
+      },
+      {
+        "Feature": "SCFI_dist_lo52",
+        "Mean|SHAP|": 0.35243195049850506
+      },
+      {
+        "Feature": "Q2",
+        "Mean|SHAP|": 0.3520233037079506
+      },
+      {
+        "Feature": "Brent_Oil_pct4",
+        "Mean|SHAP|": 0.33793255533454136
+      },
+      {
+        "Feature": "DSCFI_lag12",
+        "Mean|SHAP|": 0.33417823873783536
+      },
+      {
+        "Feature": "SCFI_rolling_std4",
+        "Mean|SHAP|": 0.31870842684330547
+      },
+      {
+        "Feature": "month",
+        "Mean|SHAP|": 0.3136840193120266
+      },
+      {
+        "Feature": "SCFI_EMA12",
+        "Mean|SHAP|": 0.297540367677525
+      },
+      {
+        "Feature": "Brent_Oil_delta4",
+        "Mean|SHAP|": 0.2931984098595764
+      },
+      {
+        "Feature": "Brent_Oil_lag2",
+        "Mean|SHAP|": 0.2770269542174317
+      },
+      {
+        "Feature": "Trade_Volume_YoY",
+        "Mean|SHAP|": 0.2719235938415873
+      },
+      {
+        "Feature": "Trade_Volume_Index_lag1",
+        "Mean|SHAP|": 0.25097799941643406
+      },
+      {
+        "Feature": "brent_x_cny",
+        "Mean|SHAP|": 0.2484756015981319
+      },
+      {
+        "Feature": "World_PMI",
+        "Mean|SHAP|": 0.2459139533424642
+      },
+      {
+        "Feature": "trade_x_pmi",
+        "Mean|SHAP|": 0.24580604665036052
+      },
+      {
+        "Feature": "World_PMI_delta1",
+        "Mean|SHAP|": 0.24474530914734466
+      },
+      {
+        "Feature": "SCFI_pct_chg_4w",
+        "Mean|SHAP|": 0.22277089755495144
+      },
+      {
+        "Feature": "CNY_USD",
+        "Mean|SHAP|": 0.21312339182665854
+      },
+      {
+        "Feature": "World_PMI_lag8",
+        "Mean|SHAP|": 0.21212517733573888
+      },
+      {
+        "Feature": "DSCFI_lag1",
+        "Mean|SHAP|": 0.2096523128657235
+      },
+      {
+        "Feature": "Month_Mar",
+        "Mean|SHAP|": 0.19030243658171725
+      },
+      {
+        "Feature": "CNY_USD_lag4",
+        "Mean|SHAP|": 0.17739845190421366
+      },
+      {
+        "Feature": "CNY_USD_lag1",
+        "Mean|SHAP|": 0.17242367899337532
+      },
+      {
+        "Feature": "DSCFI_lag4",
+        "Mean|SHAP|": 0.16512847690464794
+      },
+      {
+        "Feature": "Trade_Volume_Index_delta4",
+        "Mean|SHAP|": 0.16490714813568275
+      },
+      {
+        "Feature": "World_PMI_lag4",
+        "Mean|SHAP|": 0.15815445201578604
+      },
+      {
+        "Feature": "SCFI_regime",
+        "Mean|SHAP|": 0.1547285583426671
+      },
+      {
+        "Feature": "Trade_Volume_Index_delta1",
+        "Mean|SHAP|": 0.1502887519757065
+      },
+      {
+        "Feature": "Trade_Volume_Index_lag8",
+        "Mean|SHAP|": 0.14415082023824718
+      },
+      {
+        "Feature": "Month_May",
+        "Mean|SHAP|": 0.14187317659930804
+      },
+      {
+        "Feature": "SCFI_rolling_std8",
+        "Mean|SHAP|": 0.13937140621535968
+      },
+      {
+        "Feature": "Month_Feb",
+        "Mean|SHAP|": 0.12879127788700884
+      },
+      {
+        "Feature": "SCFI_dist_hi52",
+        "Mean|SHAP|": 0.12865775001952656
+      },
+      {
+        "Feature": "DSCFI_lag2",
+        "Mean|SHAP|": 0.12288438588442066
+      },
+      {
+        "Feature": "World_PMI_lag1",
+        "Mean|SHAP|": 0.11281463116883665
+      },
+      {
+        "Feature": "Month_Dec",
+        "Mean|SHAP|": 0.11164900279364945
+      },
+      {
+        "Feature": "Month_Nov",
+        "Mean|SHAP|": 0.11074332076643742
+      },
+      {
+        "Feature": "year",
+        "Mean|SHAP|": 0.09248585508846445
+      },
+      {
+        "Feature": "DSCFI_lag8",
+        "Mean|SHAP|": 0.09205198403738668
+      },
+      {
+        "Feature": "Trade_Volume_Index",
+        "Mean|SHAP|": 0.08664017744480575
+      },
+      {
+        "Feature": "DSCFI_x_regime",
+        "Mean|SHAP|": 0.08662657797552209
+      },
+      {
+        "Feature": "week_of_year",
+        "Mean|SHAP|": 0.06963061566680992
+      },
+      {
+        "Feature": "Q4",
+        "Mean|SHAP|": 0.06344724418735558
+      },
+      {
+        "Feature": "CNY_USD_lag2",
+        "Mean|SHAP|": 0.04898174923212338
+      },
+      {
+        "Feature": "Month_Jun",
+        "Mean|SHAP|": 0.006604659952815457
+      },
+      {
+        "Feature": "Month_Jul",
+        "Mean|SHAP|": 0.0
+      },
+      {
+        "Feature": "Month_Oct",
+        "Mean|SHAP|": 0.0
+      },
+      {
+        "Feature": "Month_Aug",
+        "Mean|SHAP|": 0.0
+      },
+      {
+        "Feature": "Month_Sep",
+        "Mean|SHAP|": 0.0
+      },
+      {
+        "Feature": "Q3",
+        "Mean|SHAP|": 0.0
+      }
+    ]
+  },
+  "shap_last_prediction": {
+    "xgboost": [
+      {
+        "feature": "SCFI_pct_chg_4w",
+        "shap_value": 81.845596
+      },
+      {
+        "feature": "SCFI_dist_hi52",
+        "shap_value": 22.541157
+      },
+      {
+        "feature": "SCFI_rolling_std8",
+        "shap_value": -18.832462
+      },
+      {
+        "feature": "DSCFI_lag1",
+        "shap_value": -18.817041
+      },
+      {
+        "feature": "DSCFI_lag3",
+        "shap_value": -15.082702
+      },
+      {
+        "feature": "SCFI_rolling_std4",
+        "shap_value": -14.221251
+      },
+      {
+        "feature": "DSCFI_lag2",
+        "shap_value": -8.025129
+      },
+      {
+        "feature": "DSCFI_lag4",
+        "shap_value": -6.623694
+      },
+      {
+        "feature": "DSCFI_lag8",
+        "shap_value": -6.589146
+      },
+      {
+        "feature": "CNY_USD",
+        "shap_value": -5.614838
+      },
+      {
+        "feature": "SCFI_EMA4_vs_EMA12",
+        "shap_value": -5.185095
+      },
+      {
+        "feature": "DSCFI_x_regime",
+        "shap_value": -4.924768
+      },
+      {
+        "feature": "week_of_year",
+        "shap_value": -4.374059
+      },
+      {
+        "feature": "SCFI_rolling_mean4",
+        "shap_value": -3.164659
+      },
+      {
+        "feature": "SCFI_z52",
+        "shap_value": 2.792457
+      },
+      {
+        "feature": "Brent_Oil_lag8",
+        "shap_value": 2.162983
+      },
+      {
+        "feature": "World_PMI",
+        "shap_value": -1.851888
+      },
+      {
+        "feature": "Brent_z13",
+        "shap_value": -1.654524
+      },
+      {
+        "feature": "Brent_Oil_delta4",
+        "shap_value": 1.591445
+      },
+      {
+        "feature": "SCFI_rolling_mean8",
+        "shap_value": 1.417152
+      },
+      {
+        "feature": "Trade_Volume_Index_lag8",
+        "shap_value": 1.411154
+      },
+      {
+        "feature": "Trade_Volume_Index_lag4",
+        "shap_value": 1.329301
+      },
+      {
+        "feature": "Trade_Volume_YoY",
+        "shap_value": -1.155065
+      },
+      {
+        "feature": "DSCFI_lag12",
+        "shap_value": -0.883766
+      },
+      {
+        "feature": "year",
+        "shap_value": -0.826345
+      },
+      {
+        "feature": "Brent_Oil_lag1",
+        "shap_value": 0.74081
+      },
+      {
+        "feature": "month",
+        "shap_value": -0.655401
+      },
+      {
+        "feature": "Brent_Oil",
+        "shap_value": -0.627869
+      },
+      {
+        "feature": "SCFI_EMA4",
+        "shap_value": -0.604659
+      },
+      {
+        "feature": "World_PMI_pct4",
+        "shap_value": 0.599989
+      },
+      {
+        "feature": "Brent_Oil_delta1",
+        "shap_value": 0.551173
+      },
+      {
+        "feature": "trade_x_pmi",
+        "shap_value": -0.47133
+      },
+      {
+        "feature": "Month_May",
+        "shap_value": -0.41837
+      },
+      {
+        "feature": "CNY_USD_lag4",
+        "shap_value": -0.417774
+      },
+      {
+        "feature": "SCFI_EMA12",
+        "shap_value": -0.410564
+      },
+      {
+        "feature": "SCFI_dist_lo52",
+        "shap_value": 0.406948
+      },
+      {
+        "feature": "brent_x_cny",
+        "shap_value": -0.273695
+      },
+      {
+        "feature": "Brent_Oil_lag4",
+        "shap_value": -0.264323
+      },
+      {
+        "feature": "World_PMI_delta1",
+        "shap_value": 0.228772
+      },
+      {
+        "feature": "Trade_Volume_Index_lag1",
+        "shap_value": 0.194673
+      },
+      {
+        "feature": "Q2",
+        "shap_value": 0.162115
+      },
+      {
+        "feature": "Brent_Oil_pct4",
+        "shap_value": 0.154242
+      },
+      {
+        "feature": "SCFI_rolling_mean13",
+        "shap_value": 0.14187
+      },
+      {
+        "feature": "Q3",
+        "shap_value": 0.117987
+      },
+      {
+        "feature": "World_PMI_lag1",
+        "shap_value": -0.113702
+      },
+      {
+        "feature": "brent_x_pmi",
+        "shap_value": -0.112833
+      },
+      {
+        "feature": "Trade_Volume_Index_delta1",
+        "shap_value": 0.10326
+      },
+      {
+        "feature": "CNY_USD_lag1",
+        "shap_value": -0.101631
+      },
+      {
+        "feature": "Trade_Volume_Index_delta4",
+        "shap_value": 0.086864
+      },
+      {
+        "feature": "World_PMI_lag4",
+        "shap_value": -0.078633
+      },
+      {
+        "feature": "Month_Jun",
+        "shap_value": -0.073328
+      },
+      {
+        "feature": "Brent_Oil_lag2",
+        "shap_value": 0.072495
+      },
+      {
+        "feature": "Month_Nov",
+        "shap_value": 0.070962
+      },
+      {
+        "feature": "CNY_USD_lag2",
+        "shap_value": -0.062472
+      },
+      {
+        "feature": "Trade_Volume_Index",
+        "shap_value": -0.054381
+      },
+      {
+        "feature": "World_PMI_lag8",
+        "shap_value": 0.046552
+      },
+      {
+        "feature": "World_PMI_delta4",
+        "shap_value": -0.038498
+      },
+      {
+        "feature": "Trade_Volume_Index_pct4",
+        "shap_value": 0.036431
+      },
+      {
+        "feature": "Month_Oct",
+        "shap_value": -0.032966
+      },
+      {
+        "feature": "Month_Feb",
+        "shap_value": 0.020835
+      },
+      {
+        "feature": "Month_Jul",
+        "shap_value": -0.007814
+      },
+      {
+        "feature": "Month_Dec",
+        "shap_value": -0.006007
+      },
+      {
+        "feature": "Month_Aug",
+        "shap_value": 0.005617
+      },
+      {
+        "feature": "Month_Mar",
+        "shap_value": 0.00366
+      },
+      {
+        "feature": "Q4",
+        "shap_value": -0.001963
+      },
+      {
+        "feature": "Month_Apr",
+        "shap_value": -0.00167
+      },
+      {
+        "feature": "Month_Sep",
+        "shap_value": 0.000597
+      },
+      {
+        "feature": "SCFI_regime",
+        "shap_value": 0.0
+      }
+    ],
+    "random_forest": [
+      {
+        "feature": "SCFI_pct_chg_4w",
+        "shap_value": 85.47002
+      },
+      {
+        "feature": "SCFI_dist_hi52",
+        "shap_value": 22.179148
+      },
+      {
+        "feature": "DSCFI_lag3",
+        "shap_value": -13.738977
+      },
+      {
+        "feature": "SCFI_rolling_std8",
+        "shap_value": -4.618707
+      },
+      {
+        "feature": "DSCFI_lag1",
+        "shap_value": -4.276347
+      },
+      {
+        "feature": "DSCFI_lag2",
+        "shap_value": -4.047748
+      },
+      {
+        "feature": "SCFI_z52",
+        "shap_value": 3.747062
+      },
+      {
+        "feature": "SCFI_rolling_std4",
+        "shap_value": -3.612668
+      },
+      {
+        "feature": "SCFI_EMA4_vs_EMA12",
+        "shap_value": -3.117855
+      },
+      {
+        "feature": "DSCFI_lag4",
+        "shap_value": -3.083401
+      },
+      {
+        "feature": "DSCFI_x_regime",
+        "shap_value": -2.703278
+      },
+      {
+        "feature": "DSCFI_lag8",
+        "shap_value": -2.303029
+      },
+      {
+        "feature": "Month_May",
+        "shap_value": -1.942322
+      },
+      {
+        "feature": "week_of_year",
+        "shap_value": -1.453078
+      },
+      {
+        "feature": "SCFI_dist_lo52",
+        "shap_value": 1.432912
+      },
+      {
+        "feature": "Brent_Oil_lag8",
+        "shap_value": 1.249578
+      },
+      {
+        "feature": "Trade_Volume_Index_lag4",
+        "shap_value": 1.194606
+      },
+      {
+        "feature": "Brent_Oil_delta1",
+        "shap_value": 1.098491
+      },
+      {
+        "feature": "SCFI_rolling_mean4",
+        "shap_value": -0.927956
+      },
+      {
+        "feature": "Trade_Volume_Index_lag8",
+        "shap_value": 0.874421
+      },
+      {
+        "feature": "brent_x_cny",
+        "shap_value": -0.830458
+      },
+      {
+        "feature": "Brent_Oil_pct4",
+        "shap_value": 0.789136
+      },
+      {
+        "feature": "trade_x_pmi",
+        "shap_value": -0.688485
+      },
+      {
+        "feature": "Brent_Oil_delta4",
+        "shap_value": 0.671352
+      },
+      {
+        "feature": "CNY_USD",
+        "shap_value": -0.629581
+      },
+      {
+        "feature": "World_PMI_pct4",
+        "shap_value": -0.599932
+      },
+      {
+        "feature": "Trade_Volume_Index_lag1",
+        "shap_value": 0.592044
+      },
+      {
+        "feature": "World_PMI",
+        "shap_value": -0.531961
+      },
+      {
+        "feature": "SCFI_EMA4",
+        "shap_value": -0.520876
+      },
+      {
+        "feature": "Trade_Volume_YoY",
+        "shap_value": -0.497611
+      },
+      {
+        "feature": "CNY_USD_lag4",
+        "shap_value": -0.481575
+      },
+      {
+        "feature": "CNY_USD_lag2",
+        "shap_value": -0.409691
+      },
+      {
+        "feature": "Brent_Oil",
+        "shap_value": -0.37725
+      },
+      {
+        "feature": "month",
+        "shap_value": -0.37467
+      },
+      {
+        "feature": "SCFI_EMA12",
+        "shap_value": -0.372922
+      },
+      {
+        "feature": "Month_Jun",
+        "shap_value": -0.371208
+      },
+      {
+        "feature": "CNY_USD_lag1",
+        "shap_value": -0.358056
+      },
+      {
+        "feature": "brent_x_pmi",
+        "shap_value": -0.355553
+      },
+      {
+        "feature": "SCFI_rolling_mean13",
+        "shap_value": 0.345654
+      },
+      {
+        "feature": "Brent_Oil_lag4",
+        "shap_value": 0.340546
+      },
+      {
+        "feature": "World_PMI_lag1",
+        "shap_value": -0.293961
+      },
+      {
+        "feature": "DSCFI_lag12",
+        "shap_value": -0.195844
+      },
+      {
+        "feature": "Q2",
+        "shap_value": 0.17961
+      },
+      {
+        "feature": "World_PMI_delta4",
+        "shap_value": -0.163542
+      },
+      {
+        "feature": "Q3",
+        "shap_value": 0.157512
+      },
+      {
+        "feature": "World_PMI_lag8",
+        "shap_value": -0.13421
+      },
+      {
+        "feature": "World_PMI_delta1",
+        "shap_value": 0.133581
+      },
+      {
+        "feature": "World_PMI_lag4",
+        "shap_value": -0.119388
+      },
+      {
+        "feature": "Trade_Volume_Index_delta4",
+        "shap_value": -0.117728
+      },
+      {
+        "feature": "SCFI_regime",
+        "shap_value": 0.096532
+      },
+      {
+        "feature": "Trade_Volume_Index_pct4",
+        "shap_value": 0.084923
+      },
+      {
+        "feature": "Month_Sep",
+        "shap_value": 0.067365
+      },
+      {
+        "feature": "Trade_Volume_Index_delta1",
+        "shap_value": 0.054777
+      },
+      {
+        "feature": "SCFI_rolling_mean8",
+        "shap_value": -0.044657
+      },
+      {
+        "feature": "Trade_Volume_Index",
+        "shap_value": -0.035512
+      },
+      {
+        "feature": "Month_Feb",
+        "shap_value": 0.021817
+      },
+      {
+        "feature": "year",
+        "shap_value": 0.021751
+      },
+      {
+        "feature": "Month_Oct",
+        "shap_value": -0.020459
+      },
+      {
+        "feature": "Brent_z13",
+        "shap_value": -0.019898
+      },
+      {
+        "feature": "Month_Dec",
+        "shap_value": -0.019601
+      },
+      {
+        "feature": "Q4",
+        "shap_value": 0.018906
+      },
+      {
+        "feature": "Month_Aug",
+        "shap_value": 0.017276
+      },
+      {
+        "feature": "Month_Apr",
+        "shap_value": -0.013789
+      },
+      {
+        "feature": "Month_Mar",
+        "shap_value": -0.011075
+      },
+      {
+        "feature": "Month_Jul",
+        "shap_value": 0.003186
+      },
+      {
+        "feature": "Brent_Oil_lag1",
+        "shap_value": 0.003097
+      },
+      {
+        "feature": "Month_Nov",
+        "shap_value": 0.001427
+      },
+      {
+        "feature": "Brent_Oil_lag2",
+        "shap_value": -0.000787
+      }
+    ],
+    "sarimax": [
+      {
+        "feature": "Brent_Oil",
+        "shap_value": 0.0
+      },
+      {
+        "feature": "CNY_USD",
+        "shap_value": 0.0
+      },
+      {
+        "feature": "World_PMI",
+        "shap_value": 0.0
+      },
+      {
+        "feature": "Trade_Volume_Index",
+        "shap_value": 0.0
+      },
+      {
+        "feature": "Trade_Volume_YoY",
+        "shap_value": 0.0
+      },
+      {
+        "feature": "Q2",
+        "shap_value": 0.0
+      },
+      {
+        "feature": "Q3",
+        "shap_value": 0.0
+      },
+      {
+        "feature": "Q4",
+        "shap_value": 0.0
+      },
+      {
+        "feature": "Month_Feb",
+        "shap_value": 0.0
+      },
+      {
+        "feature": "Month_Mar",
+        "shap_value": 0.0
+      },
+      {
+        "feature": "Month_Apr",
+        "shap_value": 0.0
+      },
+      {
+        "feature": "Month_May",
+        "shap_value": 0.0
+      },
+      {
+        "feature": "Month_Jun",
+        "shap_value": 0.0
+      },
+      {
+        "feature": "Month_Jul",
+        "shap_value": 0.0
+      },
+      {
+        "feature": "Month_Aug",
+        "shap_value": 0.0
+      },
+      {
+        "feature": "Month_Sep",
+        "shap_value": 0.0
+      },
+      {
+        "feature": "Month_Oct",
+        "shap_value": 0.0
+      },
+      {
+        "feature": "Month_Nov",
+        "shap_value": 0.0
+      },
+      {
+        "feature": "Month_Dec",
+        "shap_value": 0.0
+      }
+    ],
+    "lstm": [
+      {
+        "feature": "SCFI_rolling_mean4",
+        "shap_value": -7.48189
+      },
+      {
+        "feature": "SCFI_rolling_mean8",
+        "shap_value": 7.133066
+      },
+      {
+        "feature": "SCFI_rolling_mean13",
+        "shap_value": -4.398762
+      },
+      {
+        "feature": "SCFI_EMA4",
+        "shap_value": 3.012255
+      },
+      {
+        "feature": "SCFI_z52",
+        "shap_value": 2.725538
+      },
+      {
+        "feature": "Q2",
+        "shap_value": 1.741003
+      },
+      {
+        "feature": "World_PMI_delta4",
+        "shap_value": -1.209467
+      },
+      {
+        "feature": "Brent_Oil_lag4",
+        "shap_value": 1.099739
+      },
+      {
+        "feature": "Brent_Oil_lag1",
+        "shap_value": -1.00027
+      },
+      {
+        "feature": "CNY_USD_lag4",
+        "shap_value": 0.829939
+      },
+      {
+        "feature": "SCFI_rolling_std4",
+        "shap_value": 0.787825
+      },
+      {
+        "feature": "SCFI_rolling_std8",
+        "shap_value": 0.717371
+      },
+      {
+        "feature": "SCFI_EMA4_vs_EMA12",
+        "shap_value": 0.534525
+      },
+      {
+        "feature": "SCFI_EMA12",
+        "shap_value": 0.366845
+      },
+      {
+        "feature": "Brent_Oil_delta1",
+        "shap_value": 0.066149
+      },
+      {
+        "feature": "year",
+        "shap_value": 0.0
+      },
+      {
+        "feature": "month",
+        "shap_value": 0.0
+      },
+      {
+        "feature": "week_of_year",
+        "shap_value": 0.0
+      },
+      {
+        "feature": "Brent_Oil",
+        "shap_value": 0.0
+      },
+      {
+        "feature": "CNY_USD",
+        "shap_value": 0.0
+      },
+      {
+        "feature": "World_PMI",
+        "shap_value": 0.0
+      },
+      {
+        "feature": "Trade_Volume_Index",
+        "shap_value": 0.0
+      },
+      {
+        "feature": "Trade_Volume_YoY",
+        "shap_value": 0.0
+      },
+      {
+        "feature": "Q3",
+        "shap_value": 0.0
+      },
+      {
+        "feature": "Q4",
+        "shap_value": 0.0
+      },
+      {
+        "feature": "Month_Feb",
+        "shap_value": 0.0
+      },
+      {
+        "feature": "Month_Mar",
+        "shap_value": 0.0
+      },
+      {
+        "feature": "Month_Apr",
+        "shap_value": 0.0
+      },
+      {
+        "feature": "Month_May",
+        "shap_value": 0.0
+      },
+      {
+        "feature": "Month_Jun",
+        "shap_value": 0.0
+      },
+      {
+        "feature": "Month_Jul",
+        "shap_value": 0.0
+      },
+      {
+        "feature": "Month_Aug",
+        "shap_value": 0.0
+      },
+      {
+        "feature": "Month_Sep",
+        "shap_value": 0.0
+      },
+      {
+        "feature": "Month_Oct",
+        "shap_value": 0.0
+      },
+      {
+        "feature": "Month_Nov",
+        "shap_value": 0.0
+      },
+      {
+        "feature": "Month_Dec",
+        "shap_value": 0.0
+      },
+      {
+        "feature": "DSCFI_lag1",
+        "shap_value": 0.0
+      },
+      {
+        "feature": "DSCFI_lag2",
+        "shap_value": 0.0
+      },
+      {
+        "feature": "DSCFI_lag3",
+        "shap_value": 0.0
+      },
+      {
+        "feature": "DSCFI_lag4",
+        "shap_value": 0.0
+      },
+      {
+        "feature": "DSCFI_lag8",
+        "shap_value": 0.0
+      },
+      {
+        "feature": "DSCFI_lag12",
+        "shap_value": 0.0
+      },
+      {
+        "feature": "Brent_Oil_lag2",
+        "shap_value": 0.0
+      },
+      {
+        "feature": "Brent_Oil_lag8",
+        "shap_value": 0.0
+      },
+      {
+        "feature": "CNY_USD_lag1",
+        "shap_value": 0.0
+      },
+      {
+        "feature": "CNY_USD_lag2",
+        "shap_value": 0.0
+      },
+      {
+        "feature": "World_PMI_lag1",
+        "shap_value": 0.0
+      },
+      {
+        "feature": "World_PMI_lag4",
+        "shap_value": 0.0
+      },
+      {
+        "feature": "World_PMI_lag8",
+        "shap_value": 0.0
+      },
+      {
+        "feature": "Trade_Volume_Index_lag1",
+        "shap_value": 0.0
+      },
+      {
+        "feature": "Trade_Volume_Index_lag4",
+        "shap_value": 0.0
+      },
+      {
+        "feature": "Trade_Volume_Index_lag8",
+        "shap_value": 0.0
+      },
+      {
+        "feature": "SCFI_pct_chg_4w",
+        "shap_value": 0.0
+      },
+      {
+        "feature": "SCFI_dist_hi52",
+        "shap_value": 0.0
+      },
+      {
+        "feature": "SCFI_dist_lo52",
+        "shap_value": 0.0
+      },
+      {
+        "feature": "SCFI_regime",
+        "shap_value": 0.0
+      },
+      {
+        "feature": "Brent_Oil_delta4",
+        "shap_value": 0.0
+      },
+      {
+        "feature": "Brent_Oil_pct4",
+        "shap_value": 0.0
+      },
+      {
+        "feature": "World_PMI_delta1",
+        "shap_value": 0.0
+      },
+      {
+        "feature": "World_PMI_pct4",
+        "shap_value": 0.0
+      },
+      {
+        "feature": "Trade_Volume_Index_delta1",
+        "shap_value": 0.0
+      },
+      {
+        "feature": "Trade_Volume_Index_delta4",
+        "shap_value": 0.0
+      },
+      {
+        "feature": "Trade_Volume_Index_pct4",
+        "shap_value": 0.0
+      },
+      {
+        "feature": "Brent_z13",
+        "shap_value": 0.0
+      },
+      {
+        "feature": "brent_x_pmi",
+        "shap_value": 0.0
+      },
+      {
+        "feature": "brent_x_cny",
+        "shap_value": 0.0
+      },
+      {
+        "feature": "trade_x_pmi",
+        "shap_value": 0.0
+      },
+      {
+        "feature": "DSCFI_x_regime",
+        "shap_value": 0.0
+      }
+    ]
+  },
+  "selectable_features": [
+    "Brent_Oil",
+    "CNY_USD",
+    "World_PMI",
+    "Trade_Volume_Index",
+    "Trade_Volume_YoY"
+  ],
+  "fold_metrics": {
+    "xgboost": [
+      {
+        "Model": "XGBoost Fold 1",
+        "MAE": 22.18,
+        "RMSE": 29.2,
+        "MAPE(%)": 2.53,
+        "R\u00b2": 0.9293
+      },
+      {
+        "Model": "XGBoost Fold 2",
+        "MAE": 53.42,
+        "RMSE": 71.89,
+        "MAPE(%)": 1.86,
+        "R\u00b2": 0.9964
+      },
+      {
+        "Model": "XGBoost Fold 3",
+        "MAE": 54.38,
+        "RMSE": 89.3,
+        "MAPE(%)": 2.54,
+        "R\u00b2": 0.9965
+      },
+      {
+        "Model": "XGBoost Fold 4",
+        "MAE": 57.56,
+        "RMSE": 87.55,
+        "MAPE(%)": 2.67,
+        "R\u00b2": 0.9889
+      },
+      {
+        "Model": "XGBoost Fold 5",
+        "MAE": 60.54,
+        "RMSE": 95.64,
+        "MAPE(%)": 3.59,
+        "R\u00b2": 0.9402
+      }
+    ],
+    "random_forest": [
+      {
+        "Model": "RF Fold 1",
+        "MAE": 22.13,
+        "RMSE": 28.21,
+        "MAPE(%)": 2.53,
+        "R\u00b2": 0.934
+      },
+      {
+        "Model": "RF Fold 2",
+        "MAE": 54.35,
+        "RMSE": 72.06,
+        "MAPE(%)": 1.89,
+        "R\u00b2": 0.9964
+      },
+      {
+        "Model": "RF Fold 3",
+        "MAE": 64.96,
+        "RMSE": 106.38,
+        "MAPE(%)": 3.02,
+        "R\u00b2": 0.995
+      },
+      {
+        "Model": "RF Fold 4",
+        "MAE": 65.03,
+        "RMSE": 96.14,
+        "MAPE(%)": 3.13,
+        "R\u00b2": 0.9866
+      },
+      {
+        "Model": "RF Fold 5",
+        "MAE": 62.96,
+        "RMSE": 84.88,
+        "MAPE(%)": 3.75,
+        "R\u00b2": 0.9529
+      }
+    ],
+    "sarimax": [
+      {
+        "Model": "SARIMAX Fold 1",
+        "MAE": 172.75,
+        "RMSE": 224.68,
+        "MAPE(%)": 18.53,
+        "R\u00b2": -3.186
+      },
+      {
+        "Model": "SARIMAX Fold 2",
+        "MAE": 2153.81,
+        "RMSE": 2456.01,
+        "MAPE(%)": 57.5,
+        "R\u00b2": -3.1864
+      },
+      {
+        "Model": "SARIMAX Fold 3",
+        "MAE": 2539.9,
+        "RMSE": 2943.82,
+        "MAPE(%)": 213.01,
+        "R\u00b2": -2.8181
+      },
+      {
+        "Model": "SARIMAX Fold 4",
+        "MAE": 1028.44,
+        "RMSE": 1304.78,
+        "MAPE(%)": 40.94,
+        "R\u00b2": -1.4684
+      },
+      {
+        "Model": "SARIMAX Fold 5",
+        "MAE": 1119.03,
+        "RMSE": 1178.15,
+        "MAPE(%)": 74.87,
+        "R\u00b2": -8.0719
+      }
+    ],
+    "lstm": [
+      {
+        "Model": "LSTM Fold 1",
+        "MAE": 35.88,
+        "RMSE": 50.03,
+        "MAPE(%)": 3.97,
+        "R\u00b2": 0.7925
+      },
+      {
+        "Model": "LSTM Fold 2",
+        "MAE": 109.11,
+        "RMSE": 127.09,
+        "MAPE(%)": 3.58,
+        "R\u00b2": 0.9888
+      },
+      {
+        "Model": "LSTM Fold 3",
+        "MAE": 80.25,
+        "RMSE": 115.24,
+        "MAPE(%)": 3.55,
+        "R\u00b2": 0.9941
+      },
+      {
+        "Model": "LSTM Fold 4",
+        "MAE": 95.0,
+        "RMSE": 136.28,
+        "MAPE(%)": 4.58,
+        "R\u00b2": 0.9731
+      },
+      {
+        "Model": "LSTM Fold 5",
+        "MAE": 92.32,
+        "RMSE": 123.29,
+        "MAPE(%)": 5.46,
+        "R\u00b2": 0.9006
+      }
+    ]
+  }
+}

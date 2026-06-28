@@ -19,8 +19,8 @@ router = APIRouter(prefix="/api", tags=["metrics"])
 # parent x4        = freightai-app/
 
 # SCFI_model_metrics.json          -> freightai-app/
-METRICS_PATH  = pathlib.Path(__file__).parent.parent.parent.parent / "SCFI_model_metrics.json"
-FALLBACK_PATH = pathlib.Path(__file__).parent.parent.parent.parent.parent / "SCFI_model_metrics.json"
+METRICS_PATH  = pathlib.Path(__file__).parent.parent.parent / "SCFI_model_metrics.json"
+FALLBACK_PATH = pathlib.Path(__file__).parent.parent.parent.parent / "SCFI_model_metrics.json"
 
 # SCFI_model_metrics_baselines.json -> freightai-app/backend/
 BASELINES_PATH          = pathlib.Path(__file__).parent.parent.parent / "SCFI_model_metrics_baselines.json"
