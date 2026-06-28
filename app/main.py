@@ -84,3 +84,17 @@ async def health_check():
         "firestore_mode": firestore_service.mode,
     }
 app.include_router(metrics_router.router)
+
+@app.get("/api/debug-env", tags=["health"])
+async def debug_env():
+    import os
+    from pathlib import Path
+    cred_json = os.getenv("FIREBASE_CREDENTIALS_JSON", "")
+    cred_path = os.getenv("FIREBASE_CREDENTIALS_PATH", "")
+    return {
+        "has_FIREBASE_CREDENTIALS_JSON": bool(cred_json),
+        "json_length": len(cred_json),
+        "FIREBASE_CREDENTIALS_PATH": cred_path,
+        "path_exists": Path(cred_path).exists() if cred_path else False,
+        "FIREBASE_PROJECT_ID": os.getenv("FIREBASE_PROJECT_ID", ""),
+    }
