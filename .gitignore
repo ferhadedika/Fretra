@@ -1,0 +1,15 @@
+__pycache__/
+*.pyc
+.env
+*.egg-info/
+venv/
+.venv/
+
+# Real model artifacts and Firebase service account keys should never
+# be committed - keep them out of version control.
+model_artifacts/*.pkl
+model_artifacts/*.h5
+model_artifacts/*.pt
+model_artifacts/*.joblib
+serviceAccountKey.json
+*serviceAccount*.json

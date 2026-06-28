@@ -1,0 +1,5 @@
+{
+  "xgb_weight": 1.0,
+  "rf_weight": 0.0,
+  "rf_variant": "RF"
+}
