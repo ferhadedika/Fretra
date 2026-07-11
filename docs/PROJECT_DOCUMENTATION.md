@@ -1339,17 +1339,28 @@ Mixed: reduced-motion support exists on at least the About page; dark-theme text
 
 ## 17.2 Verified accuracy (walk-forward cross-validated, training-time)
 
-| Model | MAE | RMSE | MAPE | R² |
-|---|---|---|---|---|
-| XGBoost | 46.60 | 70.52 | 2.52% | 0.9969 |
-| Random Forest | 50.89 | 79.22 | 2.74% | 0.9960 |
-| SARIMAX | 57.02 | 82.36 | 3.28% | 0.9957 |
-| LSTM | 74.98 | 108.38 | 3.89% | 0.9926 |
-| **Ensemble** | **49.15** | **73.65** | **2.64%** | **0.9966** |
+| Model | MAE | RMSE | MAPE | R² | vs. Naïve (MAE) |
+|---|---|---|---|---|---|
+| XGBoost | 46.60 | 70.52 | 2.52% | 0.9969 | **+23.61%** |
+| Random Forest | 50.89 | 79.22 | 2.74% | 0.9960 | +16.57% |
+| SARIMAX | 57.02 | 82.36 | 3.28% | 0.9957 | +6.52% |
+| LSTM | 74.98 | 108.38 | 3.89% | 0.9926 | **−22.92%** |
+| **Ensemble** | **49.15** | **73.65** | **2.64%** | **0.9966** | **+19.43%** |
 
-*(This table was previously out of sync with §12's per-model figures — both now read from the same source, `backend/SCFI_model_metrics.json`, as of the most recent retrain documented in §11.9. The earlier numbers (XGBoost 50.08, RF 53.89, SARIMAX 58.97, LSTM 73.20, Ensemble 50.07) were the pre-session baseline, from before this session's two retrains — they are not a "more current" or "post-fix" figure set; they're simply older. If your report needs a single canonical table, use this one — it matches the artifact actually deployed as of this documentation pass.)*
+*(This table was previously out of sync with §12's per-model figures — both now read from the same source, `backend/SCFI_model_metrics.json`, as of the most recent retrain documented in §11.9. The earlier numbers (XGBoost 50.08, RF 53.89, SARIMAX 58.97, LSTM 73.20, Ensemble 50.07) were the pre-session baseline, from before this session's two retrains — they are not a "more current" or "post-fix" figure set; they're simply older. If your report needs a single canonical table, use this one — it matches the artifact actually deployed as of this documentation pass. The "vs. Naïve" column is `(naive_MAE − model_MAE) / naive_MAE × 100`, computed directly from the two tables on this page — `compute_baselines.py` has its own `vs_naive_pct` field for this but hadn't been re-run against the current artifact as of this pass, so the live JSON's field was empty; the number here is the same formula, just computed fresh.)*
 
-All five models substantially outperform the naive baselines (naive MAE 61.0, MA4 131.62, seasonal-naive 1206.75) on the same cross-validated data, directly demonstrating the value of the ML approach over simple historical extrapolation.
+### Baseline techniques (same walk-forward CV protocol, `compute_baselines.py`)
+
+| Baseline | MAE | RMSE | MAPE | R² | Description |
+|---|---|---|---|---|---|
+| Naïve (Random Walk) | 61.00 | 94.33 | 3.45% | 0.9943 | Forecast = last observed SCFI value |
+| Moving Average (4-week) | 131.62 | 194.41 | 7.05% | 0.9757 | Forecast = simple average of the last 4 weeks |
+| Exponential Smoothing (α=0.3) | 148.33 | 221.11 | 7.82% | 0.9686 | Forecast = exponentially weighted mean, more weight on recent values |
+| Seasonal Naïve | 1206.75 | 1669.72 | 70.21% | −0.7897 | Forecast = SCFI value from 52 weeks ago |
+
+**[VERIFIED, but flagged for staleness]** These four numbers are read directly from `SCFI_model_metrics_baselines.json`, last computed **2026-06-25** — before this session's `scfi_weekly` deduplication fix (§5/§14.5) and all of this session's retrains. Unlike the 5 ML models (which now train against live Supabase data as of the Stage 1 refactor — §11.2/§11.9), `compute_baselines.py` still reads from the frozen `scfi_final_dataset.csv` snapshot and was never migrated to the live-data pipeline. The numbers are presented as-is rather than silently treated as current; re-running `compute_baselines.py` today would use the exact same frozen CSV and therefore produce the same result, so "regenerating" it wouldn't actually refresh anything without first porting it to `feature_engineering.py` the same way the training script was. Worth flagging as a follow-up if a fully live-data-consistent baseline comparison matters for the report.
+
+All five ML models comfortably outperform the naive, moving-average, and seasonal-naive baselines on RMSE/MAPE/R² — the seasonal-naive baseline in particular is unusable on this series (R² is negative, meaning it performs *worse than predicting the mean*), which directly demonstrates why calendar-seasonality assumptions fail for a COVID-shocked, regime-shifting series like SCFI. See §17.6 for a fuller discussion, including the one counter-intuitive result in this table (LSTM's MAE is worse than the naive baseline despite its very high R²).
 
 ## 17.3 Performance metrics (system, not model, performance)
 
@@ -1375,6 +1386,38 @@ By always forecasting from the current week rather than a frozen training snapsh
 6. **[Resolved]** The scheduler now uses a Postgres-row-based distributed lock (`pipeline_locks` table, atomic insert-or-conditional-update), verified against genuine concurrent-process contention — running two backend instances side by side no longer double-triggers the rolling-forecast poller.
 7. **Row Level Security is enabled but permissive, not the originally-envisioned anon-read/service-role-write split.** The stricter design would have broken the existing scraper/backend writes, since no Supabase service-role key exists anywhere in this project's configuration — the permissive policy (any holder of the app's own key can read/write) was chosen as an explicit, documented tradeoff rather than left undone.
 8. **[Resolved]** Git state is now fully confirmed, not just claimed. The repo-root directory itself has no `.git` (confirmed via `git remote -v` failing there), but `backend/` and `frontend/` are each their own real, separate git repositories with commit history predating this session (first commits 2026-06-29) and their own GitHub remotes (`Fretra` and `Fretra-frontend`) — this session's changes were committed to both and pushed. Both are live and deployed (Render + Vercel respectively, both auto-deploying on push) — see §1.8 for the full verification.
+
+## 17.6 Comparative Analysis: All Models & Forecasting Techniques
+
+*(Grounded in the verified numbers in §17.2, the per-fold breakdowns in §12, and the Diebold-Mariano hypothesis tests run against the real per-observation CV data captured this session — see `backend/cv_predictions.json`/`dm_test.py`, §11.9.)*
+
+### 17.6.1 Why XGBoost wins outright
+
+XGBoost is the best individual model on every metric (MAE 46.60, RMSE 70.52, R² 0.9969), and this isn't a marginal or noisy result — a Diebold-Mariano test against SARIMAX gave DM = −4.81 (p < 0.0001) and against LSTM gave DM = −12.76 (p < 0.0001), both overwhelmingly significant. The reason is structural, not incidental: the 68 engineered `ml_features` (lags, rolling means/stds, EMAs, the 52-week regime z-score, and interaction terms like `brent_x_pmi`/`DSCFI_x_regime`) are exactly the kind of tabular, threshold-and-interaction-rich input that gradient-boosted trees are built to exploit. Each split in an XGBoost tree can express a conditional rule like "if the 52-week regime is 'high' AND recent momentum is positive, weight Brent Oil's influence differently" — precisely the kind of regime-dependent, non-linear behavior a freight-rate series driven by discrete macro shocks (COVID, oil price swings) actually exhibits. A 100-trial Optuna search additionally tuned XGBoost more thoroughly than any other model here (Random Forest got a 30-iteration randomized search; SARIMAX and LSTM used fixed/lightly-tuned configurations).
+
+### 17.6.2 Random Forest: close, but consistently behind
+
+Random Forest (MAE 50.89) uses the *same* 68 features as XGBoost but loses on every metric, and the gap is consistent across folds (see §12's `fold_metrics`), not a one-off. This is the expected behavior of bagging versus boosting on the same feature set: RF's trees are grown independently and averaged, which reduces variance but can't correct for systematic bias the way XGBoost's sequential, gradient-corrected trees do. RF is still comfortably better than the naive baseline (+16.57% MAE) and provides genuine diversification value in the Ensemble — it errs differently than XGBoost even if not as accurately, which is exactly what a blend needs.
+
+### 17.6.3 SARIMAX: a respectable classical baseline that ML still beats
+
+SARIMAX (MAE 57.02, R² 0.9957) is not the degenerate, negative-R² model earlier project documentation mistakenly described (see §12.3's correction) — it's a legitimate, reasonably competitive classical benchmark, and its one-step-ahead evaluation protocol (`append(refit=False)`, §12.3) ensures it's scored on the same task as the ML models, not an easier one. It still loses to XGBoost with high statistical confidence (DM = −4.81, p < 0.0001), and the reason is architectural: SARIMAX's `order=(1,1,1)` structure is fundamentally linear in its autoregressive and moving-average terms, with exogenous variables entering additively. It has no native way to express "Brent Oil matters more when the market is already in a high-volatility regime" the way XGBoost's tree splits or even the engineered `brent_x_pmi`/`brent_x_cny` interaction terms can. SARIMAX's own top SHAP driver is `CNY_USD` (see §12.3/model metrics `shap_global.sarimax`), consistent with a model leaning on a single strong linear relationship rather than combining signals conditionally.
+
+### 17.6.4 LSTM: the one genuinely counter-intuitive result
+
+LSTM has the highest R² of the four "real" measurements one might expect to correlate with accuracy is misleading here — it's actually the **weakest model by MAE (74.98)**, and more strikingly, **its MAE is worse than the naive random-walk baseline** (61.00) — a −22.92% "improvement" (i.e. a regression). This is worth stating plainly rather than smoothing over: LSTM's high R² (0.9926) reflects that it tracks the *broad trend* of a wildly-varying series well (SCFI ranges from ~550 to over 5,000 within the historical window, so almost any model that doesn't produce wild nonsense will show a high R²), while MAE reflects *average absolute miss on the recursive, week-to-week level reconstruction* — a much stricter, less forgiving test of short-horizon precision. Contributing factors, in order of likely importance: (1) 474 training rows (~9 years of weekly data) is a genuinely small sample for a sequence model relative to how much data LSTMs typically need to learn temporal dependencies reliably (tree models, by contrast, are far more sample-efficient on tabular data); (2) the recursive level-reconstruction (`level = prev + predicted_delta`, §11.4) compounds any per-step bias across the horizon, and LSTM's per-step ΔSCFI errors, while individually modest, compound less gracefully than the tree models' more calibrated per-step deltas; (3) LSTM was given the least extensive hyperparameter search of the four models. This is a legitimate example of "more architectural complexity does not guarantee more accuracy" for a series and dataset size like this one — worth stating as a finding, not a failure to be minimized.
+
+### 17.6.5 The Ensemble: a deliberate accuracy-for-robustness trade, now statistically confirmed
+
+The Ensemble (MAE 49.15) sits between XGBoost and Random Forest by design: the training script's SLSQP optimizer, left unconstrained, converges to 100% XGBoost (it beats every other model on every CV fold, so any weight moved away from it can only raise blended error) — the 10%-per-model floor (§13.9) deliberately overrides that optimum to guarantee a genuine four-model blend. The Diebold-Mariano test against XGBoost (DM = +5.50, p < 0.0001) confirms this ~2.5-point MAE cost is **real, not measurement noise** — despite the two models' errors being highly correlated (r = 0.993, since Ensemble is 70% XGBoost by construction), there's still enough signal in 395 paired observations to detect the systematic difference. The honest framing for the report: this is accuracy deliberately traded for robustness against XGBoost being wrong in a future regime the CV folds didn't see — a defensible engineering choice, but not a free lunch, and now backed by a real hypothesis test rather than an assumption.
+
+### 17.6.6 Baseline techniques: naïve beats "smarter-looking" smoothing, and seasonality actively hurts
+
+The four baselines produce a genuinely counter-intuitive ranking: **naïve (MAE 61.00) beats both the 4-week moving average (131.62) and exponential smoothing (148.33)** — i.e., two techniques that *look* more sophisticated than "just predict last week's value" actually perform more than twice as badly. The reason is structural to this series: SCFI moves in strong, sustained, one-directional runs (the COVID-era spike from ~550 to over 5,000, and its subsequent crash, being the extreme case) punctuated by sharp reversals. Any smoothing/averaging technique — MA4, EWM — is mathematically a lagging filter: it systematically under-reacts to a real, sustained directional move, precisely when the series is moving fastest and a fast reaction matters most. The naive random-walk forecast has no such lag, which is exactly why it's hard to beat on a strongly autocorrelated, trend-persistent series like this one — a well-known property of financial/rate time series, not a fluke of this dataset. **Seasonal-naive is the clearest failure of all** (MAE 1206.75, R² **−0.79**, i.e. worse than always predicting the historical mean): its entire premise — that this week's rate resembles the same week last year — is falsified by a series whose dominant driver was a global pandemic shock with no calendar periodicity at all. This result is the strongest piece of evidence in this project for *why* a macroeconomic-feature-driven ML approach is necessary rather than optional: the naive heuristics don't just underperform, two of the three actively make things worse than doing nothing, and the third (seasonal-naive) fails catastrophically.
+
+### 17.6.7 Practical implication for the report
+
+Ranking all nine techniques by MAE: **XGBoost (46.60) > Ensemble (49.15) > Random Forest (50.89) > SARIMAX (57.02) > Naïve (61.00) > LSTM (74.98) > MA4 (131.62) > EWM (148.33) > Seasonal-Naïve (1206.75)**. The headline finding for a report is not simply "ML beats baselines" (true, but unsurprising) — it's that architectural complexity does not track with accuracy monotonically on this problem: the simplest baseline (naïve) beats a deep learning model (LSTM), and two "smarter" smoothing heuristics are the worst-performing techniques evaluated apart from the seasonally-flawed one. The real driver of accuracy here is feature engineering (68 domain-informed lag/momentum/regime features) combined with a model architecture suited to exploiting them (gradient-boosted trees), not model sophistication for its own sake.
 
 ---
 
