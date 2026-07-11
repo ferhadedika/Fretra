@@ -24,7 +24,9 @@ HOW TO REPLACE THIS WITH A REAL MODEL:
 
 import random
 from pathlib import Path
+from typing import Optional
 
+from app.models.anchor import ForecastAnchor
 from app.models.base import BaseForecastModel
 
 # Same feature set referenced in the FreightAI dashboard's feature dictionary.
@@ -72,7 +74,11 @@ class MockForecastModel(BaseForecastModel):
         self.metrics = _MOCK_METRICS.get(self.model_id, {})
         self._loaded = True
 
-    def predict(self, horizon_weeks: int) -> list[float]:
+    def predict(self, horizon_weeks: int, anchor: Optional[ForecastAnchor] = None) -> list[float]:
+        # anchor is accepted-but-ignored: the mock has no real feature
+        # cascade to re-anchor, it just needs the same call signature as
+        # every real model class so a partially-mocked deployment (any
+        # model still falling back here) doesn't break the shared interface.
         values = []
         current = self._last_known_scfi
         for _ in range(horizon_weeks):
@@ -81,7 +87,7 @@ class MockForecastModel(BaseForecastModel):
             values.append(round(current, 2))
         return values
 
-    def explain(self, horizon_weeks: int) -> tuple[dict, dict]:
+    def explain(self, horizon_weeks: int, anchor: Optional[ForecastAnchor] = None) -> tuple[dict, dict]:
         rng = self._rng
         global_importance = {
             feat: round(abs(rng.gauss(5, 3)), 3) for feat in _FEATURE_NAMES

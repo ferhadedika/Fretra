@@ -26,10 +26,15 @@ from supabase import create_client
 logging.basicConfig(level=logging.INFO, format="%(asctime)s  %(levelname)s  %(message)s")
 log = logging.getLogger("scraper")
 
-FRED_API_KEY = os.environ.get("FRED_API_KEY", "1a27e76845c52829f17c5c57caf0f122")
-SUPABASE_URL = os.environ.get("SUPABASE_URL", "https://otdzxhuqgsgtnxuptzwk.supabase.co")
-SUPABASE_KEY = os.environ.get("SUPABASE_KEY", "sb_publishable_f53alv4kF8JtH5z80eg-vA_bRh05zux")
+FRED_API_KEY = os.environ.get("FRED_API_KEY")
+SUPABASE_URL = os.environ.get("SUPABASE_URL")
+SUPABASE_KEY = os.environ.get("SUPABASE_KEY")
 TABLE        = "scfi_weekly"
+
+if not FRED_API_KEY:
+    raise RuntimeError("FRED_API_KEY must be set as an environment variable.")
+if not SUPABASE_URL or not SUPABASE_KEY:
+    raise RuntimeError("SUPABASE_URL and SUPABASE_KEY must be set as environment variables.")
 
 # Path to your chromedriver — update if needed
 CHROMEDRIVER_PATH = os.environ.get(
@@ -440,11 +445,33 @@ def supabase_fallback(col: str) -> pd.Series:
     return pd.Series(dtype=float)
 
 
+# ── Spine lower bound ─────────────────────────────────────────────────────────
+DEFAULT_SPINE_START = "2020-01-03"  # fallback only, used if the table is empty/unreachable
+
+def get_spine_start() -> str:
+    """Reads the earliest date already stored in scfi_weekly, so the merge
+    spine always covers the table's full existing range rather than a
+    hardcoded cutoff - if older history is ever backfilled further back,
+    the spine follows automatically without a code change. Safe to widen:
+    any spine date the fresh scrape has no real SCFI value for gets dropped
+    by merge_and_upsert()'s dropna(subset=["scfi"]) before upload, so this
+    can never blank out or overwrite existing older rows - it can only
+    ever add rows a scrape actually has real data for."""
+    try:
+        client = create_client(SUPABASE_URL, SUPABASE_KEY)
+        result = client.table(TABLE).select("date").order("date", desc=False).limit(1).execute()
+        if result.data:
+            return result.data[0]["date"]
+    except Exception as e:
+        log.warning(f"  Could not read earliest date from Supabase ({e}); falling back to {DEFAULT_SPINE_START}")
+    return DEFAULT_SPINE_START
+
+
 # ── Merge & Upsert ────────────────────────────────────────────────────────────
 def merge_and_upsert(series_dict: dict):
     log.info("Merging…")
     today = datetime.utcnow().replace(tzinfo=None)
-    spine = pd.date_range(start="2020-01-03", end=today + timedelta(days=7), freq="W-FRI")
+    spine = pd.date_range(start=get_spine_start(), end=today + timedelta(days=7), freq="W-FRI")
     df = pd.DataFrame(index=spine)
     df.index.name = "date"
 

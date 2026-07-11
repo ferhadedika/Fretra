@@ -77,29 +77,45 @@ class ModelRegistry:
             self._models[model_id] = model
             self._real_status[model_id] = is_real
 
-        # Ensemble is special: it composes xgboost + random_forest rather
-        # than loading its own artifact. It goes real only if BOTH its
+        # Ensemble is special: it composes all four base models rather
+        # than loading its own artifact. It goes real only if ALL FOUR
         # components are real.
         ensemble = EnsembleModel()
         ensemble.load(MODEL_ARTIFACTS_DIR)
-        xgb_real = self._real_status.get("xgboost", False)
-        rf_real = self._real_status.get("random_forest", False)
+        component_real = {
+            model_id: self._real_status.get(model_id, False)
+            for model_id in ("xgboost", "random_forest", "sarimax", "lstm")
+        }
 
-        if xgb_real and rf_real:
-            ensemble.set_components(self._models["xgboost"], self._models["random_forest"])
+        if all(component_real.values()):
+            ensemble.set_components(
+                self._models["xgboost"],
+                self._models["random_forest"],
+                self._models["sarimax"],
+                self._models["lstm"],
+            )
             self._models["ensemble"] = ensemble
             self._real_status["ensemble"] = True
-            logger.info("Loaded REAL model: ensemble (xgboost + random_forest)")
+            logger.info("Loaded REAL model: ensemble (xgboost + random_forest + sarimax + lstm)")
         else:
             mock = MockForecastModel(model_id="ensemble", label="Ensemble")
             mock.load(MODEL_ARTIFACTS_DIR)
             self._models["ensemble"] = mock
             self._real_status["ensemble"] = False
             logger.warning(
-                "Ensemble falling back to mock - requires BOTH xgboost and "
-                "random_forest to be real (xgboost_real=%s, random_forest_real=%s)",
-                xgb_real, rf_real,
+                "Ensemble falling back to mock - requires all four components "
+                "to be real (%s)", component_real,
             )
+
+    def reload(self) -> None:
+        """Re-runs load_all() at runtime (not just app startup) - used after
+        a retraining run swaps new artifacts into MODEL_ARTIFACTS_DIR, so
+        the running backend picks them up without needing a full restart.
+        Safe to call any time: load_all() already rebuilds self._models/
+        self._real_status from scratch each time it runs."""
+        logger.info("Reloading all models from %s ...", MODEL_ARTIFACTS_DIR)
+        self.load_all()
+        logger.info("Reload complete. Real vs. mock status: %s", self._real_status)
 
     def get(self, model_id: str) -> BaseForecastModel:
         if model_id not in self._models:

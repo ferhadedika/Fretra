@@ -1,32 +1,41 @@
 """
 app/models/ensemble_model.py
 ===============================
-Real Ensemble model wrapper. Unlike the other four, this one doesn't
-load its own artifact file - it composes an already-loaded XGBoostModel
-and RandomForestModel instance using the scipy-optimised blend weight
-saved in ensemble_config.json (w_star in the training script), exactly
-matching:
+Real Ensemble model wrapper. Doesn't load its own artifact file - it
+composes the four already-loaded component models (XGBoost, RandomForest,
+SARIMAX, LSTM) using the SLSQP-optimised blend weights saved in
+ensemble_config.json, exactly matching scfi_model_v3.py's:
 
-    ens_preds = w_star * xgb_arr + (1.0 - w_star) * rf_arr
+    ens_preds = w[0]*xgb + w[1]*rf + w[2]*sarimax + w[3]*lstm
 
 REQUIRES:
-  ensemble_config.json   - {"xgb_weight": ..., "rf_weight": ...}
-  Already-loaded XGBoostModel and RandomForestModel instances, passed in
-  via set_components() after the registry loads all models (see
+  ensemble_config.json   - {"weights": {"xgboost": .., "rf": .., "sarimax": .., "lstm": ..}}
+  All four component model instances, already loaded, passed in via
+  set_components() after the registry loads them (see
   app/services/model_registry.py for the wiring).
 
-SHAP for the ensemble is the weighted blend of its two components' SHAP
-values - this isn't in the training script (which only computes SHAP for
-the four base models), but it's the mathematically consistent extension:
-since the ensemble's prediction IS w*xgb + (1-w)*rf, its attribution is
-w*xgb_shap + (1-w)*rf_shap for any feature shared by both.
+Each component's weight has a floor (10% at training time - see
+MIN_ENSEMBLE_WEIGHT in scfi_model_v3.py) so this is always a genuine
+4-way blend, never a single dominant model, at the cost of a slightly
+higher CV MAE than the unconstrained optimum would give.
+
+SHAP for the ensemble is the same weighted blend applied to each
+component's SHAP values - mathematically consistent since the ensemble's
+prediction IS the weighted sum of the components' predictions.
 """
 
 import json
+import logging
 from pathlib import Path
+from typing import Optional
 
+from app.models.anchor import ForecastAnchor
 from app.models.base import BaseForecastModel
 from app.models.metrics_loader import load_metrics_for
+
+logger = logging.getLogger("freightai.ensemble_model")
+
+COMPONENT_IDS = ("xgboost", "rf", "sarimax", "lstm")
 
 
 class EnsembleModel(BaseForecastModel):
@@ -35,15 +44,23 @@ class EnsembleModel(BaseForecastModel):
 
     def __init__(self):
         super().__init__()
-        self._xgb_weight = 0.5
-        self._rf_weight = 0.5
-        self._xgb_model = None
-        self._rf_model = None
+        self._weights = {"xgboost": 0.25, "rf": 0.25, "sarimax": 0.25, "lstm": 0.25}
+        self._components: dict[str, BaseForecastModel] = {}
 
-    def set_components(self, xgb_model: BaseForecastModel, rf_model: BaseForecastModel) -> None:
-        """Called by ModelRegistry after both component models are loaded."""
-        self._xgb_model = xgb_model
-        self._rf_model = rf_model
+    def set_components(
+        self,
+        xgb_model: BaseForecastModel,
+        rf_model: BaseForecastModel,
+        sarimax_model: BaseForecastModel,
+        lstm_model: BaseForecastModel,
+    ) -> None:
+        """Called by ModelRegistry after all four component models are loaded."""
+        self._components = {
+            "xgboost": xgb_model,
+            "rf": rf_model,
+            "sarimax": sarimax_model,
+            "lstm": lstm_model,
+        }
 
     def load(self, artifacts_dir: Path) -> None:
         artifacts_dir = Path(artifacts_dir)
@@ -51,8 +68,14 @@ class EnsembleModel(BaseForecastModel):
         if cfg_path.exists():
             with open(cfg_path) as f:
                 cfg = json.load(f)
-            self._xgb_weight = cfg.get("xgb_weight", 0.5)
-            self._rf_weight = cfg.get("rf_weight", 1 - self._xgb_weight)
+            weights = cfg.get("weights", {})
+            if weights:
+                self._weights = {k: float(weights.get(k, 0.0)) for k in COMPONENT_IDS}
+            else:
+                logger.warning(
+                    "ensemble_config.json has no 'weights' key - keeping equal 25%% "
+                    "default weights for %s", COMPONENT_IDS,
+                )
 
         metrics_path = artifacts_dir.parent / "SCFI_model_metrics.json"
         self.metrics = load_metrics_for(metrics_path, "ensemble")
@@ -61,33 +84,43 @@ class EnsembleModel(BaseForecastModel):
         # predict()/explain() work - ModelRegistry guarantees the order.
         self._loaded = True
 
-    def predict(self, horizon_weeks: int) -> list[float]:
-        if self._xgb_model is None or self._rf_model is None:
+    def _require_components(self) -> None:
+        if len(self._components) != len(COMPONENT_IDS):
             raise RuntimeError(
-                "EnsembleModel.set_components() must be called before predict()."
+                "EnsembleModel.set_components() must be called (with all four "
+                "components) before predict()/explain()."
             )
-        xgb_vals = self._xgb_model.predict(horizon_weeks)
-        rf_vals = self._rf_model.predict(horizon_weeks)
+
+    def predict(self, horizon_weeks: int, anchor: Optional[ForecastAnchor] = None) -> list[float]:
+        self._require_components()
+        per_model = {
+            cid: model.predict(horizon_weeks, anchor=anchor)
+            for cid, model in self._components.items()
+        }
         return [
-            round(self._xgb_weight * x + self._rf_weight * r, 2)
-            for x, r in zip(xgb_vals, rf_vals)
+            round(sum(self._weights[cid] * per_model[cid][i] for cid in COMPONENT_IDS), 2)
+            for i in range(horizon_weeks)
         ]
 
-    def explain(self, horizon_weeks: int) -> tuple[dict, dict]:
-        if self._xgb_model is None or self._rf_model is None:
-            raise RuntimeError(
-                "EnsembleModel.set_components() must be called before explain()."
-            )
-        xgb_global, xgb_local = self._xgb_model.explain(horizon_weeks)
-        rf_global, rf_local = self._rf_model.explain(horizon_weeks)
+    def explain(self, horizon_weeks: int, anchor: Optional[ForecastAnchor] = None) -> tuple[dict, dict]:
+        self._require_components()
+        per_model_global = {}
+        per_model_local = {}
+        for cid, model in self._components.items():
+            g, l = model.explain(horizon_weeks, anchor=anchor)
+            per_model_global[cid] = g
+            per_model_local[cid] = l
 
-        all_features = set(xgb_global) | set(rf_global)
+        all_features = set()
+        for g in per_model_global.values():
+            all_features |= set(g)
+
         global_importance = {
-            f: self._xgb_weight * xgb_global.get(f, 0.0) + self._rf_weight * rf_global.get(f, 0.0)
+            f: sum(self._weights[cid] * per_model_global[cid].get(f, 0.0) for cid in COMPONENT_IDS)
             for f in all_features
         }
         local_importance = {
-            f: self._xgb_weight * xgb_local.get(f, 0.0) + self._rf_weight * rf_local.get(f, 0.0)
+            f: sum(self._weights[cid] * per_model_local[cid].get(f, 0.0) for cid in COMPONENT_IDS)
             for f in all_features
         }
         return global_importance, local_importance

@@ -19,6 +19,9 @@ WHY THIS SHAPE:
 """
 
 from abc import ABC, abstractmethod
+from typing import Optional
+
+from app.models.anchor import ForecastAnchor
 
 
 class BaseForecastModel(ABC):
@@ -41,20 +44,30 @@ class BaseForecastModel(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def predict(self, horizon_weeks: int) -> list[float]:
+    def predict(self, horizon_weeks: int, anchor: Optional[ForecastAnchor] = None) -> list[float]:
         """
         Return `horizon_weeks` forecasted SCFI values (original units,
         e.g. ~800-5000), ordered from week+1 to week+horizon_weeks.
+
+        `anchor`, if given, is the live last_row/last_scfi (and, for LSTM,
+        scaled sequence tail) to cascade forward from - built fresh from
+        Supabase by the rolling-forecast pipeline. If omitted (the default,
+        used by every pre-existing caller), the model uses the frozen
+        last_row/last_scfi it loaded from model_artifacts/ at startup -
+        unchanged behavior.
         """
         raise NotImplementedError
 
     @abstractmethod
-    def explain(self, horizon_weeks: int) -> tuple[dict[str, float], dict[str, float]]:
+    def explain(
+        self, horizon_weeks: int, anchor: Optional[ForecastAnchor] = None
+    ) -> tuple[dict[str, float], dict[str, float]]:
         """
         Return (global_importance, local_importance) as
         {feature_name: shap_value} dicts. Global = mean |SHAP| across
-        training data; local = SHAP values behind the most recent
-        prediction specifically.
+        training data (always the frozen background - not affected by
+        `anchor`); local = SHAP values behind the most recent prediction,
+        which uses `anchor` when given, else the frozen last_row.
         """
         raise NotImplementedError
 

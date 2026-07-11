@@ -12,6 +12,7 @@ from datetime import date, timedelta
 from app.config import SCFI_MIN, SCFI_MAX
 from app.services.model_registry import registry
 from app.services.firestore_service import firestore_service
+from app.services.supabase_service import supabase_service
 from app.schemas.forecast import (
     ForecastResponse, ForecastPoint, ModelMeta, HistoricalPoint, ShapResponse, ShapFeature,
 )
@@ -48,7 +49,7 @@ def _synthetic_historical_series(weeks: int = 120) -> list[dict]:
 
 
 async def get_historical_series() -> list[HistoricalPoint]:
-    rows = await firestore_service.get_historical_scfi()
+    rows = await supabase_service.get_historical_scfi()
     if not rows:
         rows = _synthetic_historical_series()
     return [HistoricalPoint(**row) for row in rows]

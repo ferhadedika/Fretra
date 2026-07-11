@@ -21,7 +21,9 @@ import json
 import joblib
 import numpy as np
 from pathlib import Path
+from typing import Optional
 
+from app.models.anchor import ForecastAnchor
 from app.models.base import BaseForecastModel
 from app.models.feature_cascade import row_to_dict, forecast_tree_delta
 from app.models.metrics_loader import load_metrics_for
@@ -66,17 +68,20 @@ class RandomForestModel(BaseForecastModel):
 
         self._loaded = True
 
-    def predict(self, horizon_weeks: int) -> list[float]:
+    def predict(self, horizon_weeks: int, anchor: Optional[ForecastAnchor] = None) -> list[float]:
+        row = anchor.last_row if anchor else self._last_row
+        last_scfi = anchor.last_scfi if anchor else self._last_scfi
         fc = forecast_tree_delta(
-            self._model, self._last_row, self._ml_features,
-            self._last_scfi, horizon_weeks,
+            self._model, row, self._ml_features,
+            last_scfi, horizon_weeks,
         )
         return [pt["forecast"] for pt in fc]
 
-    def explain(self, horizon_weeks: int) -> tuple[dict, dict]:
+    def explain(self, horizon_weeks: int, anchor: Optional[ForecastAnchor] = None) -> tuple[dict, dict]:
         import shap
 
-        x_last = np.array([[self._last_row[f] for f in self._ml_features]])
+        row = anchor.last_row if anchor else self._last_row
+        x_last = np.array([[row[f] for f in self._ml_features]])
         explainer = shap.TreeExplainer(self._model)
 
         bg = self._X_background if self._X_background is not None else x_last

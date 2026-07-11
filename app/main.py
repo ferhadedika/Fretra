@@ -26,14 +26,16 @@ if _fb_json and not os.getenv("FIREBASE_CREDENTIALS_PATH"):
 import logging
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import ALLOWED_ORIGINS
+from app.dependencies.auth import get_current_user
+from app.scheduler import poller
 from app.services.model_registry import registry
 from app.services.firestore_service import firestore_service
 from app.routers import models_router, forecast_router, shap_router
-from app.routers import metrics_router
+from app.routers import metrics_router, rolling_forecast_router, retrain_router
 
 
 logging.basicConfig(level=logging.INFO)
@@ -48,9 +50,11 @@ async def lifespan(app: FastAPI):
     logger.info("Models loaded: %s", [m.model_id for m in registry.list_all()])
     logger.info("Real vs. mock status: %s", registry.real_status())
     logger.info("Firestore mode: %s", firestore_service.mode)
+    poller.start()
     yield
     # ── Shutdown: nothing to clean up for the mock models; a real LSTM/
     # GPU-backed model might release resources here. ────────────────────
+    poller.shutdown()
     logger.info("Shutting down.")
 
 
@@ -70,9 +74,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(models_router.router)
-app.include_router(forecast_router.router)
-app.include_router(shap_router.router)
+_auth_dep = [Depends(get_current_user)]
+
+app.include_router(models_router.router, dependencies=_auth_dep)
+app.include_router(forecast_router.router, dependencies=_auth_dep)
+app.include_router(shap_router.router, dependencies=_auth_dep)
+app.include_router(metrics_router.router, dependencies=_auth_dep)
+app.include_router(rolling_forecast_router.router, dependencies=_auth_dep)
+app.include_router(retrain_router.router, dependencies=_auth_dep)
 
 
 @app.get("/api/health", tags=["health"])
@@ -82,19 +91,4 @@ async def health_check():
         "models_ready": registry.is_ready,
         "models_real_status": registry.real_status(),
         "firestore_mode": firestore_service.mode,
-    }
-app.include_router(metrics_router.router)
-
-@app.get("/api/debug-env", tags=["health"])
-async def debug_env():
-    import os
-    from pathlib import Path
-    cred_json = os.getenv("FIREBASE_CREDENTIALS_JSON", "")
-    cred_path = os.getenv("FIREBASE_CREDENTIALS_PATH", "")
-    return {
-        "has_FIREBASE_CREDENTIALS_JSON": bool(cred_json),
-        "json_length": len(cred_json),
-        "FIREBASE_CREDENTIALS_PATH": cred_path,
-        "path_exists": Path(cred_path).exists() if cred_path else False,
-        "FIREBASE_PROJECT_ID": os.getenv("FIREBASE_PROJECT_ID", ""),
     }

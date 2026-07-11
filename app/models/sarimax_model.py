@@ -38,7 +38,9 @@ import json
 import joblib
 import numpy as np
 from pathlib import Path
+from typing import Optional
 
+from app.models.anchor import ForecastAnchor
 from app.models.base import BaseForecastModel
 from app.models.feature_cascade import row_to_dict, forecast_sarimax
 from app.models.metrics_loader import load_metrics_for
@@ -81,11 +83,12 @@ class SarimaxModel(BaseForecastModel):
 
         self._loaded = True
 
-    def predict(self, horizon_weeks: int) -> list[float]:
-        fc = forecast_sarimax(self._results, self._last_row, self._exog_features, horizon_weeks)
+    def predict(self, horizon_weeks: int, anchor: Optional[ForecastAnchor] = None) -> list[float]:
+        row = anchor.last_row if anchor else self._last_row
+        fc = forecast_sarimax(self._results, row, self._exog_features, horizon_weeks)
         return [pt["forecast"] for pt in fc]
 
-    def explain(self, horizon_weeks: int) -> tuple[dict, dict]:
+    def explain(self, horizon_weeks: int, anchor: Optional[ForecastAnchor] = None) -> tuple[dict, dict]:
         """
         PERFORMANCE NOTE: SARIMAX's SHAP is the slowest of the four
         models by a wide margin - shap.KernelExplainer calls
@@ -115,7 +118,8 @@ class SarimaxModel(BaseForecastModel):
                     preds.append(self._last_scfi)
             return np.array(preds)
 
-        x_last = np.array([[self._last_row[f] for f in self._exog_features]])
+        row = anchor.last_row if anchor else self._last_row
+        x_last = np.array([[row[f] for f in self._exog_features]])
 
         # Smaller background (15 rows, not 50) and lower nsamples (30, not
         # 80) - still real historical variation, just bounded for latency.

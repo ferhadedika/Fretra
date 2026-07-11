@@ -1,5 +1,9 @@
 {
-  "xgb_weight": 1.0,
-  "rf_weight": 0.0,
+  "weights": {
+    "xgboost": 0.7,
+    "rf": 0.1,
+    "sarimax": 0.1,
+    "lstm": 0.1
+  },
   "rf_variant": "RF"
 }

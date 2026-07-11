@@ -30,7 +30,9 @@ import json
 import joblib
 import numpy as np
 from pathlib import Path
+from typing import Optional
 
+from app.models.anchor import ForecastAnchor
 from app.models.base import BaseForecastModel
 from app.models.feature_cascade import forecast_lstm_delta
 from app.models.metrics_loader import load_metrics_for
@@ -68,21 +70,32 @@ class LstmModel(BaseForecastModel):
 
         self._loaded = True
 
-    def predict(self, horizon_weeks: int) -> list[float]:
+    def predict(self, horizon_weeks: int, anchor: Optional[ForecastAnchor] = None) -> list[float]:
         # self._x_seq_background has shape (N, SEQ_LEN, n_features) - N
         # separate overlapping sequences. The correct forecast starting
         # point is the LAST single sequence (the most recent SEQ_LEN
         # timesteps), shape (SEQ_LEN, n_features) - NOT the last 12
         # sequences, which would stay 3D and break the LSTM's expected
         # input shape.
-        x_seq_tail = self._x_seq_background[-1]
+        if anchor is not None and anchor.x_seq_tail is not None:
+            x_seq_tail = anchor.x_seq_tail
+            last_scfi = anchor.last_scfi
+        else:
+            x_seq_tail = self._x_seq_background[-1]
+            last_scfi = self._last_scfi
         fc = forecast_lstm_delta(
             self._model, self._feat_scaler, self._target_scaler, x_seq_tail,
-            self._ml_features, self._last_scfi, horizon_weeks,
+            self._ml_features, last_scfi, horizon_weeks,
         )
         return [pt["forecast"] for pt in fc]
 
-    def explain(self, horizon_weeks: int) -> tuple[dict, dict]:
+    def transform_sequence(self, feature_matrix: np.ndarray) -> np.ndarray:
+        """Scale a live (seq_len, n_features) raw-units matrix with this
+        model's own frozen feature scaler, so callers building a fresh
+        anchor never need to reach into self._feat_scaler directly."""
+        return self._feat_scaler.transform(feature_matrix)
+
+    def explain(self, horizon_weeks: int, anchor: Optional[ForecastAnchor] = None) -> tuple[dict, dict]:
         import shap
 
         seq_len = self._x_seq_background.shape[1]
@@ -92,7 +105,13 @@ class LstmModel(BaseForecastModel):
             return self._model.predict(tiled, verbose=0).ravel()
 
         x_bg = self._x_seq_background[:, -1, :]
-        x_ex = self._x_seq_background[-5:, -1, :]  # explain last few "last timesteps"
+        if anchor is not None and anchor.x_seq_tail is not None:
+            # Same "explain the last few timesteps" shape as the frozen
+            # path, but the LAST row (whose SHAP becomes local_importance
+            # below) is the live anchor's most recent timestep.
+            x_ex = np.vstack([self._x_seq_background[-4:, -1, :], anchor.x_seq_tail[-1:, :]])
+        else:
+            x_ex = self._x_seq_background[-5:, -1, :]  # explain last few "last timesteps"
 
         explainer = shap.KernelExplainer(flat_pred, x_bg)
         sv = explainer.shap_values(x_ex, nsamples=100, silent=True)
