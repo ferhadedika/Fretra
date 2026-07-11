@@ -4,44 +4,44 @@
       "id": "naive",
       "label": "Na\u00efve (Random Walk)",
       "description": "Forecast = last observed SCFI value. The simplest possible benchmark.",
-      "MAE": 61.0,
-      "RMSE": 94.33,
-      "MAPE(%)": 3.4547,
-      "R\u00b2": 0.994287,
+      "MAE": 65.22,
+      "RMSE": 98.83,
+      "MAPE(%)": 3.4818,
+      "R\u00b2": 0.993842,
       "fold_metrics": [
         {
-          "MAE": 23.94,
-          "RMSE": 32.11,
-          "MAPE(%)": 2.9492,
-          "R\u00b2": 0.844567,
+          "MAE": 24.43,
+          "RMSE": 32.49,
+          "MAPE(%)": 2.8653,
+          "R\u00b2": 0.833125,
           "fold": 1
         },
         {
-          "MAE": 52.78,
-          "RMSE": 77.52,
-          "MAPE(%)": 3.138,
-          "R\u00b2": 0.992928,
+          "MAE": 64.77,
+          "RMSE": 86.59,
+          "MAPE(%)": 2.5175,
+          "R\u00b2": 0.995369,
           "fold": 2
         },
         {
-          "MAE": 68.4,
-          "RMSE": 95.05,
-          "MAPE(%)": 2.4389,
-          "R\u00b2": 0.995323,
+          "MAE": 62.23,
+          "RMSE": 93.31,
+          "MAPE(%)": 2.8502,
+          "R\u00b2": 0.996634,
           "fold": 3
         },
         {
-          "MAE": 76.19,
-          "RMSE": 120.66,
-          "MAPE(%)": 4.0043,
-          "R\u00b2": 0.981656,
+          "MAE": 88.09,
+          "RMSE": 129.38,
+          "MAPE(%)": 4.2521,
+          "R\u00b2": 0.976311,
           "fold": 4
         },
         {
-          "MAE": 83.7,
-          "RMSE": 117.73,
-          "MAPE(%)": 4.7432,
-          "R\u00b2": 0.923896,
+          "MAE": 86.56,
+          "RMSE": 121.8,
+          "MAPE(%)": 4.9238,
+          "R\u00b2": 0.940559,
           "fold": 5
         }
       ]
@@ -50,44 +50,44 @@
       "id": "seasonal_naive",
       "label": "Seasonal Na\u00efve",
       "description": "Forecast = SCFI value from 52 weeks ago. Captures annual seasonality.",
-      "MAE": 1206.75,
-      "RMSE": 1669.72,
-      "MAPE(%)": 70.2085,
-      "R\u00b2": -0.789725,
+      "MAE": 1328.6,
+      "RMSE": 1756.93,
+      "MAPE(%)": 76.1995,
+      "R\u00b2": -0.946247,
       "fold_metrics": [
         {
-          "MAE": 93.44,
-          "RMSE": 111.02,
-          "MAPE(%)": 11.4795,
-          "R\u00b2": -0.85849,
+          "MAE": 83.69,
+          "RMSE": 100.95,
+          "MAPE(%)": 9.9768,
+          "R\u00b2": -0.610446,
           "fold": 1
         },
         {
-          "MAE": 851.89,
-          "RMSE": 1218.32,
-          "MAPE(%)": 37.3543,
-          "R\u00b2": -0.746908,
+          "MAE": 1901.55,
+          "RMSE": 2147.06,
+          "MAPE(%)": 59.156,
+          "R\u00b2": -1.847813,
           "fold": 2
         },
         {
-          "MAE": 2360.71,
-          "RMSE": 2607.62,
-          "MAPE(%)": 106.2225,
-          "R\u00b2": -2.519902,
+          "MAE": 2402.28,
+          "RMSE": 2689.27,
+          "MAPE(%)": 178.3779,
+          "R\u00b2": -1.796081,
           "fold": 3
         },
         {
-          "MAE": 1884.1,
-          "RMSE": 2168.6,
-          "MAPE(%)": 145.3486,
-          "R\u00b2": -4.92535,
+          "MAE": 1423.14,
+          "RMSE": 1623.57,
+          "MAPE(%)": 82.7341,
+          "R\u00b2": -2.730398,
           "fold": 4
         },
         {
-          "MAE": 843.62,
-          "RMSE": 969.92,
-          "MAPE(%)": 50.6374,
-          "R\u00b2": -4.165213,
+          "MAE": 832.35,
+          "RMSE": 972.51,
+          "MAPE(%)": 50.7529,
+          "R\u00b2": -2.789198,
           "fold": 5
         }
       ]
@@ -96,44 +96,44 @@
       "id": "ma4",
       "label": "Moving Average (4-week)",
       "description": "Forecast = simple average of last 4 weeks. Smooths short-term noise.",
-      "MAE": 131.62,
-      "RMSE": 194.41,
-      "MAPE(%)": 7.0512,
-      "R\u00b2": 0.975738,
+      "MAE": 142.61,
+      "RMSE": 205.58,
+      "MAPE(%)": 7.2316,
+      "R\u00b2": 0.973354,
       "fold_metrics": [
         {
-          "MAE": 38.5,
-          "RMSE": 49.5,
-          "MAPE(%)": 4.8036,
-          "R\u00b2": 0.630522,
+          "MAE": 38.29,
+          "RMSE": 49.52,
+          "MAPE(%)": 4.4736,
+          "R\u00b2": 0.612378,
           "fold": 1
         },
         {
-          "MAE": 113.21,
-          "RMSE": 156.27,
-          "MAPE(%)": 6.2233,
-          "R\u00b2": 0.97126,
+          "MAE": 147.79,
+          "RMSE": 180.43,
+          "MAPE(%)": 5.6087,
+          "R\u00b2": 0.979889,
           "fold": 2
         },
         {
-          "MAE": 165.58,
-          "RMSE": 224.65,
-          "MAPE(%)": 6.2288,
-          "R\u00b2": 0.973875,
+          "MAE": 148.27,
+          "RMSE": 221.31,
+          "MAPE(%)": 6.8221,
+          "R\u00b2": 0.981065,
           "fold": 3
         },
         {
-          "MAE": 169.74,
-          "RMSE": 254.2,
-          "MAPE(%)": 8.3377,
-          "R\u00b2": 0.918582,
+          "MAE": 192.98,
+          "RMSE": 269.81,
+          "MAPE(%)": 8.8853,
+          "R\u00b2": 0.896979,
           "fold": 4
         },
         {
-          "MAE": 171.06,
-          "RMSE": 216.82,
-          "MAPE(%)": 9.6626,
-          "R\u00b2": 0.741874,
+          "MAE": 185.71,
+          "RMSE": 233.51,
+          "MAPE(%)": 10.3683,
+          "R\u00b2": 0.78154,
           "fold": 5
         }
       ]
@@ -142,44 +142,44 @@
       "id": "ewm",
       "label": "Exponential Smoothing (\u03b1=0.3)",
       "description": "Forecast = exponentially weighted average, weighting recent values more.",
-      "MAE": 148.33,
-      "RMSE": 221.11,
-      "MAPE(%)": 7.8198,
-      "R\u00b2": 0.968616,
+      "MAE": 162.06,
+      "RMSE": 235.23,
+      "MAPE(%)": 8.1017,
+      "R\u00b2": 0.965113,
       "fold_metrics": [
         {
-          "MAE": 37.51,
-          "RMSE": 48.27,
-          "MAPE(%)": 4.7132,
-          "R\u00b2": 0.64865,
+          "MAE": 36.79,
+          "RMSE": 48.95,
+          "MAPE(%)": 4.2947,
+          "R\u00b2": 0.621249,
           "fold": 1
         },
         {
-          "MAE": 132.46,
-          "RMSE": 183.36,
-          "MAPE(%)": 7.0764,
-          "R\u00b2": 0.960431,
+          "MAE": 180.52,
+          "RMSE": 217.55,
+          "MAPE(%)": 6.8505,
+          "R\u00b2": 0.970763,
           "fold": 2
         },
         {
-          "MAE": 211.96,
-          "RMSE": 280.2,
-          "MAPE(%)": 8.5349,
-          "R\u00b2": 0.959357,
+          "MAE": 187.77,
+          "RMSE": 274.27,
+          "MAPE(%)": 9.0775,
+          "R\u00b2": 0.970916,
           "fold": 3
         },
         {
-          "MAE": 187.67,
-          "RMSE": 284.21,
-          "MAPE(%)": 8.9698,
-          "R\u00b2": 0.898228,
+          "MAE": 209.2,
+          "RMSE": 299.56,
+          "MAPE(%)": 9.4323,
+          "R\u00b2": 0.873008,
           "fold": 4
         },
         {
-          "MAE": 172.02,
-          "RMSE": 221.82,
-          "MAPE(%)": 9.8048,
-          "R\u00b2": 0.729848,
+          "MAE": 196.02,
+          "RMSE": 248.94,
+          "MAPE(%)": 10.8533,
+          "R\u00b2": 0.751705,
           "fold": 5
         }
       ]
@@ -188,6 +188,6 @@
   "baseline_cv_config": {
     "n_splits": 5,
     "method": "TimeSeriesSplit (expanding walk-forward)",
-    "computed": "2026-06-25"
+    "computed": "2026-07-12"
   }
 }

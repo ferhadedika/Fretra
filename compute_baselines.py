@@ -1,8 +1,19 @@
 """
 compute_baselines.py
 =====================
-Computes naive baseline forecasting metrics from scfi_final_dataset.csv
-and appends them to SCFI_model_metrics.json under a "baselines" key.
+Computes naive baseline forecasting metrics from the SAME live-data
+pipeline the 5 ML models use (app.forecasting.feature_engineering,
+fetching from Supabase - see scfi_model_v3.py's own Section 0), and
+appends them to SCFI_model_metrics.json under a "baselines" key.
+
+[UPDATED, a later session] This used to read a frozen scfi_final_dataset.csv
+snapshot, independently of whatever data the ML models were actually
+trained/evaluated on - meaning the baseline comparison wasn't necessarily
+apples-to-apples with the models' own CV folds. Migrated to the same
+engineer_features() pipeline scfi_model_v3.py uses (Stage 1 refactor,
+see docs/PROJECT_DOCUMENTATION.md §11.2/§11.9), so the baseline series is
+now byte-for-byte the same rows/dates the models are evaluated against -
+the walk-forward folds below line up exactly with the models' own folds.
 
 Baselines implemented:
   1. Naive          — forecast = last known value (random walk)
@@ -18,12 +29,13 @@ Uses the same walk-forward validation approach as your models:
   - Each fold trains on past, tests on next chunk
   - No future data leakage
 
-Run:
-    python compute_baselines.py
-    python compute_baselines.py --csv path/to/file.csv --json path/to/metrics.json
+Run (from backend/, same venv as the FastAPI app - no heavy ML deps needed):
+    venv/Scripts/python.exe compute_baselines.py
+    venv/Scripts/python.exe compute_baselines.py --json path/to/metrics.json
 """
 
 import argparse
+import asyncio
 import json
 import pathlib
 import numpy as np
@@ -31,20 +43,28 @@ import pandas as pd
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from sklearn.model_selection import TimeSeriesSplit
 
+from app.forecasting.feature_engineering import engineer_features
+from app.services.supabase_service import supabase_service
+
 # ── Defaults ──────────────────────────────────────────────────────────────────
 SCRIPT_DIR   = pathlib.Path(__file__).parent
-DEFAULT_CSV  = SCRIPT_DIR / "scfi_final_dataset.csv"
 DEFAULT_JSON = SCRIPT_DIR / "SCFI_model_metrics_baselines.json"
 
-SCFI_MIN = 800.0
-SCFI_MAX = 5000.0
 N_SPLITS = 5
 
 
-def denormalize(series: pd.Series) -> pd.Series:
-    if series.max() <= 1.0:
-        return series * (SCFI_MAX - SCFI_MIN) + SCFI_MIN
-    return series
+async def load_live_scfi() -> pd.Series:
+    """Same live-data path scfi_model_v3.py uses: fetch raw scfi_weekly rows
+    from Supabase, run them through the shared engineer_features() pipeline,
+    and return just the SCFI level column - already on the identical
+    weekly-Friday spine, with the same ~52-week warm-up rows dropped, as
+    whatever the 5 ML models were last trained/evaluated on."""
+    raw_rows = await supabase_service.get_full_historical()
+    if not raw_rows:
+        raise RuntimeError("get_full_historical() returned no rows - check Supabase connectivity/.env")
+    raw_df = pd.DataFrame(raw_rows)
+    engineered = engineer_features(raw_df)
+    return engineered["SCFI"].reset_index(drop=True)
 
 
 def compute_metrics(y_true, y_pred):
@@ -115,17 +135,11 @@ def seasonal_naive_fn(history):
     return history.iloc[-1]  # fallback if not enough history
 
 
-def run(csv_path: pathlib.Path, json_path: pathlib.Path):
-    # ── Load CSV ──────────────────────────────────────────────────────────────
-    print(f"Reading: {csv_path}")
-    df = pd.read_csv(csv_path)
-
-    date_col = "Date" if "Date" in df.columns else "date"
-    df[date_col] = pd.to_datetime(df[date_col])
-    df = df.sort_values(date_col).reset_index(drop=True)
-
-    scfi = denormalize(df["SCFI"].copy())
-    print(f"  {len(scfi)} rows, SCFI range: {scfi.min():.1f} – {scfi.max():.1f}")
+def run(json_path: pathlib.Path):
+    # ── Load live SCFI series (same pipeline the models use) ──────────────────
+    print("Fetching live scfi_weekly data from Supabase...")
+    scfi = asyncio.run(load_live_scfi())
+    print(f"  {len(scfi)} rows, SCFI range: {scfi.min():.1f} - {scfi.max():.1f}")
 
     # ── Compute baselines ─────────────────────────────────────────────────────
     baselines_config = [
@@ -213,7 +227,6 @@ def run(csv_path: pathlib.Path, json_path: pathlib.Path):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--csv",  type=pathlib.Path, default=DEFAULT_CSV)
     parser.add_argument("--json", type=pathlib.Path, default=DEFAULT_JSON)
     args = parser.parse_args()
-    run(args.csv, args.json)
+    run(args.json)
