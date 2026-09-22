@@ -11,7 +11,13 @@ whatever's currently deployed, and only swaps the new artifacts into the
 live MODEL_ARTIFACTS_DIR if they're equal-or-better - backing up the old
 ones first. If worse, the old artifacts are left untouched and a warning
 is logged. Never retrains silently into production: every swap is
-preceded by a timestamped backup of exactly what was replaced.
+preceded by a timestamped backup of exactly what was replaced, and if the
+swap itself or the post-swap registry.reload() fails (e.g. a corrupt
+artifact that copies fine but won't load), that same backup is copied
+back over the live artifacts automatically so the app is never left
+serving from a broken swap. Every code path - success, rejection, or any
+failure - always ends by writing a terminal status to retrain_status.json;
+it never gets stuck on "running".
 
 Where "staging" actually is: scfi_model_v3.py's own SCRIPT_DIR (wherever
 the file itself lives - the repo root) is where it saves
@@ -133,6 +139,24 @@ def swap_in_staged_artifacts() -> None:
     logger.info("Swapped staged artifacts into %s", MODEL_ARTIFACTS_DIR)
 
 
+def restore_live_artifacts_from_backup(backup_dir: Path) -> None:
+    """Undoes swap_in_staged_artifacts() by copying a backup_live_artifacts()
+    snapshot back over the live model_artifacts/ + SCFI_model_metrics.json.
+    Used when the newly-swapped-in artifacts turn out to be broken (e.g. a
+    corrupt .keras file that swapped fine but fails to load), so a failed
+    retrain never leaves the live backend stuck on disk artifacts nobody
+    can successfully load."""
+    backed_up_artifacts = backup_dir / "model_artifacts"
+    if backed_up_artifacts.exists():
+        for item in backed_up_artifacts.iterdir():
+            if item.is_file():
+                shutil.copy2(item, MODEL_ARTIFACTS_DIR / item.name)
+    backed_up_metrics = backup_dir / "SCFI_model_metrics.json"
+    if backed_up_metrics.exists():
+        shutil.copy2(backed_up_metrics, LIVE_METRICS_PATH)
+    logger.info("Restored live artifacts from backup %s", backup_dir)
+
+
 async def _run_training_subprocess() -> tuple[int, str]:
     """Runs scfi_model_v3.py in the SAME dedicated venv it needs (heavy
     deps: tensorflow, xgboost, optuna, shap, statsmodels - deliberately
@@ -197,8 +221,41 @@ async def run_retraining_and_maybe_swap(triggered_by: str) -> dict:
 
         if comparison["better_or_equal"]:
             backup_dir = backup_live_artifacts()
-            swap_in_staged_artifacts()
-            registry.reload()
+            try:
+                swap_in_staged_artifacts()
+                registry.reload()
+            except Exception as exc:
+                # Artifacts may already be half- or fully-swapped on disk at
+                # this point (swap_in_staged_artifacts succeeded but reload()
+                # failed to load them, e.g. a corrupt .keras file) - roll
+                # disk back to the pre-swap backup so the live app is never
+                # left pointed at artifacts nobody can load, then reload
+                # again so the in-memory registry matches disk once more.
+                logger.exception(
+                    "Swap/reload failed after backing up live artifacts to %s - rolling back.",
+                    backup_dir,
+                )
+                try:
+                    restore_live_artifacts_from_backup(backup_dir)
+                    registry.reload()
+                    rollback_note = "rolled back to previous artifacts successfully"
+                except Exception as rollback_exc:
+                    logger.critical(
+                        "Rollback after failed swap ALSO failed (%s) - live artifacts may be "
+                        "inconsistent with the running registry. Manual intervention needed; "
+                        "backup is at %s", rollback_exc, backup_dir,
+                    )
+                    rollback_note = f"rollback ALSO failed: {rollback_exc}"
+                result = {
+                    "status": "failed",
+                    "reason": f"artifact swap or registry reload failed: {exc}",
+                    "backup_dir": str(backup_dir),
+                    "rollback": rollback_note,
+                    "log_path": log_path,
+                }
+                _write_status(**result)
+                return result
+
             result = {
                 "status": "swapped", "comparison": comparison,
                 "backup_dir": str(backup_dir), "log_path": log_path,
@@ -212,6 +269,15 @@ async def run_retraining_and_maybe_swap(triggered_by: str) -> dict:
             logger.warning("Retraining did NOT improve on the deployed model - keeping current artifacts. %s", comparison)
 
         _write_status(**result)
+        return result
+    except Exception as exc:
+        # Catch-all so a truly unexpected failure (e.g. the training venv
+        # is missing, or a metrics file is corrupt JSON) never leaves
+        # retrain_status.json stuck on "running" forever - every path out
+        # of this function writes a terminal status.
+        result = {"status": "failed", "reason": f"unexpected error during retraining: {exc}"}
+        _write_status(**result)
+        logger.exception("Retraining failed with an unexpected error.")
         return result
     finally:
         await supabase_service.release_lock(RETRAIN_LOCK_NAME, triggered_by)

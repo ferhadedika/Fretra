@@ -71,11 +71,23 @@ class ModelRegistry:
         self._real_status: dict[str, bool] = {}
 
     def load_all(self) -> None:
-        """Instantiate + load() every model once. Call at app startup."""
+        """Instantiate + load() every model once. Call at app startup.
+
+        Builds into local dicts and only swaps them into self._models/
+        self._real_status once, at the very end, via a single reference
+        reassignment (atomic under the GIL). This matters because reload()
+        can run concurrently with in-flight requests reading self._models
+        via get() - without the atomic swap, a concurrent reader could see
+        a half-rebuilt dict (some models from the old generation, some from
+        the new one) while this loop is still running.
+        """
+        new_models: dict[str, BaseForecastModel] = {}
+        new_real_status: dict[str, bool] = {}
+
         for model_id, label in _MODEL_LABELS.items():
             model, is_real = _load_one(model_id, label, MODEL_ARTIFACTS_DIR)
-            self._models[model_id] = model
-            self._real_status[model_id] = is_real
+            new_models[model_id] = model
+            new_real_status[model_id] = is_real
 
         # Ensemble is special: it composes all four base models rather
         # than loading its own artifact. It goes real only if ALL FOUR
@@ -83,29 +95,32 @@ class ModelRegistry:
         ensemble = EnsembleModel()
         ensemble.load(MODEL_ARTIFACTS_DIR)
         component_real = {
-            model_id: self._real_status.get(model_id, False)
+            model_id: new_real_status.get(model_id, False)
             for model_id in ("xgboost", "random_forest", "sarimax", "lstm")
         }
 
         if all(component_real.values()):
             ensemble.set_components(
-                self._models["xgboost"],
-                self._models["random_forest"],
-                self._models["sarimax"],
-                self._models["lstm"],
+                new_models["xgboost"],
+                new_models["random_forest"],
+                new_models["sarimax"],
+                new_models["lstm"],
             )
-            self._models["ensemble"] = ensemble
-            self._real_status["ensemble"] = True
+            new_models["ensemble"] = ensemble
+            new_real_status["ensemble"] = True
             logger.info("Loaded REAL model: ensemble (xgboost + random_forest + sarimax + lstm)")
         else:
             mock = MockForecastModel(model_id="ensemble", label="Ensemble")
             mock.load(MODEL_ARTIFACTS_DIR)
-            self._models["ensemble"] = mock
-            self._real_status["ensemble"] = False
+            new_models["ensemble"] = mock
+            new_real_status["ensemble"] = False
             logger.warning(
                 "Ensemble falling back to mock - requires all four components "
                 "to be real (%s)", component_real,
             )
+
+        self._models = new_models
+        self._real_status = new_real_status
 
     def reload(self) -> None:
         """Re-runs load_all() at runtime (not just app startup) - used after
