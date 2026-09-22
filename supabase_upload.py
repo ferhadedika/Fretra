@@ -38,6 +38,8 @@ import pathlib
 import pandas as pd
 from supabase import create_client
 
+from app.config import SCFI_MIN, SCFI_MAX
+
 # ── Config ────────────────────────────────────────────────────────────────────
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "")
 SUPABASE_KEY = os.environ.get("SUPABASE_KEY", "")
@@ -51,9 +53,6 @@ CORE_COLS = [
     "PMI_Manufacturing", "PMI_Services",
     "Trade_Volume_Index", "Trade_Volume_YoY",
 ]
-
-SCFI_MIN = 800.0
-SCFI_MAX = 5000.0
 
 
 def denormalize(series: pd.Series) -> pd.Series:

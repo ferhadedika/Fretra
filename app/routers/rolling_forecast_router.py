@@ -13,6 +13,7 @@ from app.dependencies.auth import get_current_user
 from app.forecasting.orchestrator import run_rolling_forecast
 from app.schemas.rolling_forecast import (
     AccuracyRecord,
+    MODEL_LABELS,
     RollingForecastResponse,
     RollingForecastRunRecord,
     RollingModelForecast,
@@ -22,14 +23,6 @@ from app.schemas.forecast import ModelId
 from app.services.supabase_service import supabase_service
 
 router = APIRouter(prefix="/api/rolling-forecast", tags=["rolling-forecast"])
-
-_MODEL_LABELS = {
-    "xgboost": "XGBoost",
-    "random_forest": "Random Forest",
-    "sarimax": "SARIMAX",
-    "lstm": "LSTM",
-    "ensemble": "Ensemble",
-}
 
 
 @router.get("/latest", response_model=RollingForecastResponse)
@@ -52,7 +45,7 @@ async def get_latest(horizon_weeks: int = Query(8, ge=1, le=12)):
     models = [
         RollingModelForecast(
             model_name=model_name,
-            label=_MODEL_LABELS.get(model_name, model_name),
+            label=MODEL_LABELS.get(model_name, model_name),
             points=sorted(model_rows, key=lambda r: r["week_ahead"]),
             local_importance=sorted(
                 (

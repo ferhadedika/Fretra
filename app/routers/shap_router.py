@@ -10,10 +10,10 @@ genuinely slow (~10-15s measured) since it's a black-box sampling method
 calling SARIMAX's own Kalman-filter forecast() repeatedly. That's too
 long to run directly inside an async endpoint - it would block the event
 loop and stall every other concurrent request for its full duration.
-get_shap_explanation() below runs in a threadpool for exactly this
-reason; XGBoost/RandomForest's TreeExplainer is fast enough that this
-costs nothing for them, but it's what keeps SARIMAX from blocking the
-whole server.
+forecast_service._build_shap_response_sync() is run via run_in_threadpool
+below for exactly this reason; XGBoost/RandomForest's TreeExplainer is
+fast enough that this costs nothing for them, but it's what keeps
+SARIMAX from blocking the whole server.
 """
 
 from fastapi import APIRouter, HTTPException, Query

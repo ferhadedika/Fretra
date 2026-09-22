@@ -134,14 +134,6 @@ def _build_shap_response_sync(model_id: str, horizon_weeks: int) -> ShapResponse
     )
 
 
-async def get_shap_explanation(model_id: str, horizon_weeks: int) -> ShapResponse:
-    """Async convenience wrapper for callers that don't care about the
-    threadpool distinction (e.g. tests). The router calls
-    _build_shap_response_sync directly via run_in_threadpool instead of
-    this, to actually get the threadpool benefit."""
-    return _build_shap_response_sync(model_id, horizon_weeks)
-
-
 async def get_all_models_meta() -> list[ModelMeta]:
     return [
         ModelMeta(

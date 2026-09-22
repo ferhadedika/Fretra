@@ -11,6 +11,8 @@ from datetime import date
 from typing import Literal, Optional
 from pydantic import BaseModel, Field
 
+from app.config import DEFAULT_HORIZON_WEEKS
+
 ModelId = Literal["xgboost", "random_forest", "sarimax", "lstm", "ensemble"]
 
 
@@ -37,7 +39,7 @@ class ModelMeta(BaseModel):
 
 class ForecastRequest(BaseModel):
     model_id: ModelId = "ensemble"
-    horizon_weeks: int = Field(8, ge=1, le=12)
+    horizon_weeks: int = Field(DEFAULT_HORIZON_WEEKS, ge=1, le=12)
     save_to_history: bool = Field(
         True, description="If true, persist this forecast run to Firestore"
     )

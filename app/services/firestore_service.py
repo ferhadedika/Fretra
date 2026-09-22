@@ -18,14 +18,12 @@ in the backend's environment (see backend/.env.example).
 
 import logging
 from datetime import datetime, date
-from typing import Optional
 
 from app.config import FIRESTORE_ENABLED, FIREBASE_CREDENTIALS_PATH, FIREBASE_PROJECT_ID
 
 logger = logging.getLogger("freightai.firestore")
 
 HISTORY_COLLECTION = "forecast_history"
-SCFI_COLLECTION = "scfi_historical"
 
 
 def _json_safe(record: dict) -> dict:
@@ -106,23 +104,6 @@ class FirestoreService:
             return [{**doc.to_dict(), "id": doc.id} for doc in docs]
 
         return list(reversed(self._memory_store))[:limit]
-
-    # ── Historical SCFI series ─────────────────────────────────────────────
-
-    async def get_historical_scfi(self, limit: Optional[int] = None) -> list[dict]:
-        """
-        Returns [{date, scfi}, ...]. In fallback mode, returns an empty
-        list — the caller (forecast_service) generates a synthetic series
-        instead so the app still has something to chart end-to-end.
-        """
-        if not self._enabled:
-            return []
-
-        query = self._db.collection(SCFI_COLLECTION).order_by("date")
-        if limit:
-            query = query.limit(limit)
-        docs = query.stream()
-        return [doc.to_dict() for doc in docs]
 
 
 # Module-level singleton, mirrors services/model_registry.py's pattern.

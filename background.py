@@ -1,6 +1,6 @@
 import joblib, numpy as np, pathlib
 
-ARTIFACTS_DIR = pathlib.Path(r"C:\Users\User\Desktop\freightai-app new\freightai-app\backend\model_artifacts")
+ARTIFACTS_DIR = pathlib.Path(__file__).resolve().parent / "model_artifacts"
 
 # Load what we already have
 feat_sc = joblib.load(ARTIFACTS_DIR / "lstm_feature_scaler.pkl")

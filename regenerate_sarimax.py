@@ -1,8 +1,8 @@
 import joblib, pathlib, pandas as pd, numpy as np
 from statsmodels.tsa.statespace.sarimax import SARIMAX
 
-SCRIPT_DIR    = pathlib.Path(r"C:\Users\User\Desktop\freightai-app new\freightai-app")
-ARTIFACTS_DIR = pathlib.Path(r"C:\Users\User\Desktop\freightai-app new\freightai-app\backend\model_artifacts")
+SCRIPT_DIR    = pathlib.Path(__file__).resolve().parent.parent
+ARTIFACTS_DIR = pathlib.Path(__file__).resolve().parent / "model_artifacts"
 
 df = pd.read_csv(SCRIPT_DIR / "scfi_final_dataset.csv")
 df["Date"] = pd.to_datetime(df["Date"])
