@@ -97,15 +97,30 @@ def _predict_and_explain_all(
     live anchor. Called via run_in_threadpool (see run_rolling_forecast)
     so it never blocks the event loop - SARIMAX/LSTM SHAP alone can take
     several seconds each, same reasoning as app/routers/shap_router.py.
+
+    Every row is tagged with is_real from registry.real_status() at write
+    time - if a model's artifact failed to load and it's silently running
+    as MockForecastModel's random-walk fallback, that's recorded on the
+    row itself rather than only being visible in in-memory registry state
+    (previously exposed solely via GET /api/health, with no link to what
+    got persisted). accuracy.py filters to is_real rows only when
+    computing MAE/RMSE/MAPE/bias, so a mock-degraded run can never
+    silently corrupt a model's real accuracy stats. Requires the
+    is_real column (docs/sql/add_is_real_column.sql) - degrades to
+    everything reading as real-only accuracy if the migration hasn't
+    been run yet, since supabase_service already fails closed (logs and
+    returns []) on a missing column rather than crashing.
     """
     history_rows: list[dict] = []
     shap_rows: list[dict] = []
+    real_status = registry.real_status()
 
     for model_id in MODEL_IDS:
         model = registry.get(model_id)
         points = model.predict(RUN_HORIZON_WEEKS, anchor=anchor)
         _, local_importance = model.explain(RUN_HORIZON_WEEKS, anchor=anchor)
         rmse = model.metrics.get("rmse")
+        is_real = real_status.get(model_id, False)
 
         for week_ahead, value in enumerate(points, start=1):
             target_week = latest_actual_week + timedelta(weeks=week_ahead)
@@ -124,12 +139,14 @@ def _predict_and_explain_all(
                 "lower_bound": round(lower, 2),
                 "upper_bound": round(upper, 2),
                 "confidence_level": CONFIDENCE_LEVEL,
+                "is_real": is_real,
             })
 
         shap_rows.append({
             "run_id": run_id,
             "model_name": model_id,
             "local_importance": _json_safe_floats(local_importance),
+            "is_real": is_real,
         })
 
     return history_rows, shap_rows

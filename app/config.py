@@ -41,10 +41,29 @@ SUPABASE_URL = os.getenv("SUPABASE_URL", "")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY", "")
 SUPABASE_ENABLED = bool(SUPABASE_URL and SUPABASE_KEY)
 
+# Optional. If set, the BACKEND's own Supabase client (app/services/
+# supabase_service.py) uses this instead of SUPABASE_KEY. A service-role
+# key bypasses Row Level Security entirely, which is what lets
+# docs/sql/tighten_rls_to_service_role.sql remove anon/authenticated
+# write access on the rolling-pipeline tables without breaking the
+# backend/scraper's own writes - see that file's header comment for the
+# two-step order this must be applied in. Leave unset and nothing about
+# current behavior changes: the backend keeps using SUPABASE_KEY exactly
+# as it does today, and the existing permissive RLS policy keeps working.
+SUPABASE_SERVICE_ROLE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "")
+
 # ── Forecast defaults ─────────────────────────────────────────────────────
 DEFAULT_HORIZON_WEEKS = int(os.getenv("DEFAULT_HORIZON_WEEKS", "8"))
 SCFI_MIN = float(os.getenv("SCFI_MIN", "800.0"))
 SCFI_MAX = float(os.getenv("SCFI_MAX", "5000.0"))
+
+# ── Debug endpoints ───────────────────────────────────────────────────────
+# GET /api/metrics-debug echoes server filesystem paths and a directory
+# listing - useful while wiring up METRICS_PATH on a new deployment, but
+# it's information disclosure (any signed-in user could hit it, not just
+# an admin - there's no admin-role concept in this app) if left on by
+# default in production. Off unless explicitly opted into.
+DEBUG_ENDPOINTS_ENABLED = os.getenv("DEBUG_ENDPOINTS_ENABLED", "false").lower() == "true"
 
 # ── Rolling forecast pipeline ─────────────────────────────────────────────
 # How often the internal poller checks Supabase for a newer actual week

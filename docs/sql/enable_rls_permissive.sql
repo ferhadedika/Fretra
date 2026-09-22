@@ -9,6 +9,12 @@
 -- later (swap `using (true) with check (true)` for real conditions, or
 -- add a service-role key and drop the anon write grant) without any
 -- further schema changes.
+--
+-- [UPDATED, a later session] That tightening is now ready to run - see
+-- docs/sql/tighten_rls_to_service_role.sql. Read its header comment
+-- first: it must only be run after SUPABASE_SERVICE_ROLE_KEY is set and
+-- the backend has been confirmed to be using it, or the backend's own
+-- writes will start silently failing.
 
 alter table forecast_history  enable row level security;
 alter table forecast_shap     enable row level security;

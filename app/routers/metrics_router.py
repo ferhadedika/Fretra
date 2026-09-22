@@ -9,6 +9,8 @@ import json
 import pathlib
 from fastapi import APIRouter, HTTPException
 
+from app.config import DEBUG_ENDPOINTS_ENABLED
+
 router = APIRouter(prefix="/api", tags=["metrics"])
 
 # File locations (relative to this file):
@@ -18,7 +20,8 @@ router = APIRouter(prefix="/api", tags=["metrics"])
 # parent x3        = freightai-app/backend/
 # parent x4        = freightai-app/
 
-# SCFI_model_metrics.json          -> freightai-app/
+# SCFI_model_metrics.json (primary)  -> freightai-app/backend/
+# SCFI_model_metrics.json (fallback) -> freightai-app/
 METRICS_PATH  = pathlib.Path(__file__).parent.parent.parent / "SCFI_model_metrics.json"
 FALLBACK_PATH = pathlib.Path(__file__).parent.parent.parent.parent / "SCFI_model_metrics.json"
 
@@ -54,6 +57,12 @@ def get_metrics():
 
 @router.get("/metrics-debug")
 def metrics_debug():
+    # Filesystem paths + a directory listing - information disclosure to
+    # any signed-in user (this app has no admin-role concept to gate it
+    # more tightly), so it's opt-in only. Set DEBUG_ENDPOINTS_ENABLED=true
+    # locally while wiring up METRICS_PATH on a new deployment.
+    if not DEBUG_ENDPOINTS_ENABLED:
+        raise HTTPException(status_code=404, detail="Not found")
     return {
         "metrics_path": str(METRICS_PATH),
         "metrics_path_exists": METRICS_PATH.exists(),

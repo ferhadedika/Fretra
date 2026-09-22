@@ -15,7 +15,7 @@ from pydantic import BaseModel
 
 from app.schemas.forecast import ModelId, ShapFeature
 
-_MODEL_LABELS = {
+MODEL_LABELS = {
     "xgboost": "XGBoost",
     "random_forest": "Random Forest",
     "sarimax": "SARIMAX",
@@ -36,6 +36,11 @@ class RollingForecastPoint(BaseModel):
     lower_bound: Optional[float] = None
     upper_bound: Optional[float] = None
     confidence_level: Optional[float] = None
+    # False if this point came from MockForecastModel's random-walk
+    # fallback rather than the real trained model (its artifact failed to
+    # load - see model_registry.py). None if the is_real column doesn't
+    # exist yet in Supabase (migration not run - docs/sql/add_is_real_column.sql).
+    is_real: Optional[bool] = None
 
 
 class RollingModelForecast(BaseModel):

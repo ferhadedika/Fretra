@@ -11,7 +11,7 @@ import logging
 from datetime import date, datetime, timedelta
 from typing import Optional
 
-from app.config import SUPABASE_URL, SUPABASE_KEY, SUPABASE_ENABLED
+from app.config import SUPABASE_URL, SUPABASE_KEY, SUPABASE_SERVICE_ROLE_KEY, SUPABASE_ENABLED
 
 logger = logging.getLogger("freightai.supabase")
 
@@ -46,8 +46,19 @@ class SupabaseService:
             try:
                 from supabase import create_client
 
-                self._client = create_client(SUPABASE_URL, SUPABASE_KEY)
-                logger.info("Supabase connected")
+                # Prefer the service-role key when configured - it bypasses
+                # RLS entirely, which is what lets the RLS policies be
+                # tightened to deny anon/authenticated writes without
+                # breaking the backend's own writes (see config.py's
+                # SUPABASE_SERVICE_ROLE_KEY and
+                # docs/sql/tighten_rls_to_service_role.sql). Falls back to
+                # the existing anon key unchanged if not set.
+                key = SUPABASE_SERVICE_ROLE_KEY or SUPABASE_KEY
+                self._client = create_client(SUPABASE_URL, key)
+                logger.info(
+                    "Supabase connected (using %s key)",
+                    "service-role" if SUPABASE_SERVICE_ROLE_KEY else "anon",
+                )
             except Exception as exc:  # noqa: BLE001 - log and degrade gracefully
                 logger.warning(
                     "Supabase credentials configured but connection failed (%s). "
@@ -213,8 +224,17 @@ class SupabaseService:
         return applied
 
     async def get_backfilled_predictions(self) -> list[dict]:
-        """All forecast_history rows that already have an actual value
-        recorded - the raw material for accuracy snapshot computation."""
+        """All REAL (is_real = true) forecast_history rows that already
+        have an actual value recorded - the raw material for accuracy
+        snapshot computation. Mock-fallback rows (a model's real artifact
+        failed to load - see model_registry.py) are excluded so a
+        mock-degraded run can never silently corrupt a model's accuracy
+        stats with fabricated random-walk error.
+
+        Requires the is_real column - see docs/sql/add_is_real_column.sql.
+        If that migration hasn't been run yet, this fails closed (via the
+        except below, like every other method here) rather than crashing,
+        which means accuracy snapshots simply stop updating until it is."""
         if not self._enabled:
             return []
         try:
@@ -222,6 +242,7 @@ class SupabaseService:
                 self._client.table(FORECAST_HISTORY_TABLE)
                 .select("model_name, week_ahead, predicted_scfi, actual_scfi")
                 .not_.is_("actual_scfi", "null")
+                .eq("is_real", True)
                 .execute()
             )
             return res.data or []
